@@ -10,7 +10,6 @@
 // 請於此新增您要先行編譯的標頭
 #include "framework.h"
 #include "Global.h"
-#include "../libmem/libmem.hpp"
 
 #ifdef BUILD_SHARED
 #define API __declspec(dllexport)

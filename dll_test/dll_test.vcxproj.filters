@@ -27,12 +27,6 @@
     <ClInclude Include="Global.h">
       <Filter>標頭檔</Filter>
     </ClInclude>
-    <ClInclude Include="..\libmem\libmem.h">
-      <Filter>資源檔</Filter>
-    </ClInclude>
-    <ClInclude Include="..\libmem\libmem.hpp">
-      <Filter>資源檔</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -43,9 +37,6 @@
     </ClCompile>
     <ClCompile Include="Global.cpp">
       <Filter>來源檔案</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libmem\libmem.c">
-      <Filter>資源檔</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
