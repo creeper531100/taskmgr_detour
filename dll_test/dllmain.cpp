@@ -1,29 +1,15 @@
 ﻿// dllmain.cpp : 定義 DLL 應用程式的進入點。
 #include "pch.h"
 #include "function.h"
-
-#include <iostream>
-#include <sstream>
 #include "Proc.h"
-#include <detours/detours.h>
 
-#define FRAME_SIZE 38 * 39
+constexpr int FRAME_SIZE = 38 * 39;
 
-using UpdateData_t      =   int64_t(__fastcall*)(void*);
-using IsServer_t        =   bool(__fastcall*)(void*);
-using SetRefreshRate_t  =   int64_t(__fastcall*)(int64_t, UINT);
-using GetBlockColors_t  =   void(__fastcall*)(void*, int, UINT*, UINT*);
-using SetBlockData_t    =   __int64(__fastcall*)(void*, UINT, wchar_t*, UINT, UINT);
-
-UpdateData_t o_UpdateData;
-IsServer_t o_IsServer;
+UpdateData_t     o_UpdateData;
+IsServer_t       o_IsServer;
 SetRefreshRate_t o_SetRefreshRate;
-
-SetBlockData_t SetBlockData;
+SetBlockData_t   SetBlockData;
 GetBlockColors_t GetBlockColors;
-
-void* g_Core;
-int64_t g_RefreshRate_ptr;
 
 bool __fastcall IsServer(void* ret) {
     g_Core = ret;
@@ -33,10 +19,10 @@ bool __fastcall IsServer(void* ret) {
 int64_t __fastcall UpdateData(void* ret) {
     int64_t return_data = o_UpdateData(ret);
     UINT a4, a5;
-    int deep = 50;
-    wchar_t w[5];
+    int deep = 75;
+    wchar_t w[] = L"白癡";
     for (int i = 0; i < FRAME_SIZE; i++) {
-        swprintf_s(w, L"%d%%", deep);
+        //swprintf_s(w, L"%d%%", deep);
         GetBlockColors(ret, deep, &a4, &a5);
         SetBlockData(ret, i, w, a4, a5);
     }
@@ -51,16 +37,16 @@ int64_t __fastcall SetRefreshRate(int64_t ret, UINT a2) {
 DWORD WINAPI attach(LPVOID) {
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
-    g_oWndProc = (WNDPROC_T)GetWindowLongPtr(g_HWND, GWLP_WNDPROC);
+    g_oWndProc = (WndProc_t)GetWindowLongPtr(g_HWND, GWLP_WNDPROC);
     SetWindowLongPtr(g_HWND, GWLP_WNDPROC, (LONG_PTR)WndProc);
     EnumWindows(EnumWindowsProc, GetCurrentProcessId());
 
-    g_BaseAddress    = (ULONG64)GetModuleInfo("taskmgr.exe").lpBaseOfDll;
-    o_UpdateData     = (UpdateData_t)(g_BaseAddress + 0xC9CC8);
-    o_IsServer       = (IsServer_t)(g_BaseAddress + 0x195BC);
-    o_SetRefreshRate = (SetRefreshRate_t)(g_BaseAddress + 0x6063C);
-    GetBlockColors   = (GetBlockColors_t)(g_BaseAddress + 0xC9158);
-    SetBlockData     = (SetBlockData_t)(g_BaseAddress + 0xC9B70);
+    g_BaseAddress    =           (ULONG64)(GetModuleInfo("taskmgr.exe").lpBaseOfDll);
+    o_UpdateData     =      (UpdateData_t)(g_BaseAddress + 0xC9CC8);
+    o_IsServer       =        (IsServer_t)(g_BaseAddress + 0x195BC);
+    o_SetRefreshRate =  (SetRefreshRate_t)(g_BaseAddress + 0x6063C);
+    GetBlockColors   =  (GetBlockColors_t)(g_BaseAddress + 0xC9158);
+    SetBlockData     =    (SetBlockData_t)(g_BaseAddress + 0xC9B70);
 
     DetourRestoreAfterWith();
     DetourTransactionBegin();

@@ -2,12 +2,14 @@
 #include <filesystem>
 
 using namespace std;
+//#define Release
 
 int main() {
+    SetConsoleOutputCP(CP_UTF8);
     ShellExecuteA(nullptr, "open", "taskmgr", nullptr, nullptr, SW_SHOWNORMAL);
+    printf(u8"請等待注入...不要點擊任何按鈕\n");
     Sleep(2000);
     DWORD pid;
-    //#define Release
     string Path = "C:\\Users\\creep\\source\\repos\\程式設計\\x64\\Release\\dll_test.dll";
 #ifdef Release
     Path = (std::filesystem::current_path().string() + "\\dll_test.dll");
@@ -23,11 +25,11 @@ int main() {
     HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, lpStartAddress, loc, 0, NULL);
     WaitForSingleObject(hThread, INFINITE);
     if (hThread) {
-        printf("Release...\n");
+        printf("成功...\n");
         VirtualFreeEx(hProcess, loc, MAX_PATH, MEM_RELEASE);
         CloseHandle(hThread);
     }
-#ifndef Release
+#ifdef Release
     system("pause");
 #endif
 }

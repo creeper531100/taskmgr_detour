@@ -9,6 +9,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 // 請於此新增您要先行編譯的標頭
 #include "framework.h"
+#include <iostream>
+#include <sstream>
+#include <detours/detours.h>
 #include "Global.h"
 
 #ifdef BUILD_SHARED
