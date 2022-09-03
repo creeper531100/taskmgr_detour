@@ -9,9 +9,7 @@ int main() {
     DWORD pid;
     //#define Release
     string Path = "C:\\Users\\creep\\source\\repos\\程式設計\\x64\\Release\\dll_test.dll";
-#ifndef Release
-    //Path = "C:\\Users\\creep\\source\\repos\\程式設計\\x64\\Release\\Dll1.dll";
-#else
+#ifdef Release
     Path = (std::filesystem::current_path().string() + "\\dll_test.dll");
 #endif
     std::cout << "Current path is " << Path << '\n';
