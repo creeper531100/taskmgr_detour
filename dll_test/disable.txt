@@ -1,0 +1,28 @@
+/* 
+
+void __fastcall GetBlockColors(void* ret, int a2, long* a3, long* a4) {
+    std::cout << ret << std::endl;
+    oGetBlockColors(ret, a2, a3, a4);
+}
+
+__int64 __fastcall SetBlockData(void* ret, UINT a2, wchar_t* a3, UINT a4, UINT a5) {
+    std::cout << ret << std::endl;
+    return oSetBlockData(ret, a2, a3, a4, a5);
+}
+
+
+
+
+SetBlockData_t oSetBlockData;
+GetBlockColors_t oGetBlockColors;
+
+
+
+
+
+typedef void (__fastcall *GetBlockColors_t)(void*, int, long*, long*);
+typedef __int64 (__fastcall *SetBlockData_t)(void*, UINT, wchar_t*, UINT, UINT);
+typedef __int64 (__fastcall* GetCpuUsageData_t)(void*, unsigned int, int*, int*);
+
+
+*/

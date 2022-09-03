@@ -8,6 +8,6 @@ typedef __int64(__fastcall* Query)(void*);
 extern HINSTANCE g_hInstance;
 extern HWND      g_HWND;
 extern WNDPROC_T g_oWndProc;
-extern LONG_PTR  g_BaseAddress;
+extern ULONG64   g_BaseAddress;
 extern ULONG64*  g_pVTableBase;
 

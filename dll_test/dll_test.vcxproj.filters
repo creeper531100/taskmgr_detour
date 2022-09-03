@@ -39,4 +39,9 @@
       <Filter>來源檔案</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="disable.txt">
+      <Filter>資源檔</Filter>
+    </Text>
+  </ItemGroup>
 </Project>
