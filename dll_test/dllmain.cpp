@@ -1,5 +1,6 @@
 ﻿// dllmain.cpp : 定義 DLL 應用程式的進入點。
 #include "pch.h"
+#include "function.h"
 
 #include <iostream>
 #include <sstream>
@@ -53,12 +54,14 @@ DWORD WINAPI attach(LPVOID) {
     g_oWndProc = (WNDPROC_T)GetWindowLongPtr(g_HWND, GWLP_WNDPROC);
     SetWindowLongPtr(g_HWND, GWLP_WNDPROC, (LONG_PTR)WndProc);
     EnumWindows(EnumWindowsProc, GetCurrentProcessId());
-    g_BaseAddress = (ULONG64)GetModuleInfo("taskmgr.exe").lpBaseOfDll;
-    o_UpdateData = (UpdateData_t)(g_BaseAddress + 0xC9CC8);
-    o_IsServer = (IsServer_t)(g_BaseAddress + 0x195BC);
+
+    g_BaseAddress    = (ULONG64)GetModuleInfo("taskmgr.exe").lpBaseOfDll;
+    o_UpdateData     = (UpdateData_t)(g_BaseAddress + 0xC9CC8);
+    o_IsServer       = (IsServer_t)(g_BaseAddress + 0x195BC);
     o_SetRefreshRate = (SetRefreshRate_t)(g_BaseAddress + 0x6063C);
-    GetBlockColors = (GetBlockColors_t)(g_BaseAddress + 0xC9158);
-    SetBlockData = (SetBlockData_t)(g_BaseAddress + 0xC9B70);
+    GetBlockColors   = (GetBlockColors_t)(g_BaseAddress + 0xC9158);
+    SetBlockData     = (SetBlockData_t)(g_BaseAddress + 0xC9B70);
+
     DetourRestoreAfterWith();
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -66,13 +69,16 @@ DWORD WINAPI attach(LPVOID) {
     DetourAttach((PVOID*)&o_IsServer, IsServer);
     DetourAttach((PVOID*)&o_SetRefreshRate, SetRefreshRate);
     DetourTransactionCommit();
+
     while (!g_Core) {
         Sleep(500);
     }
+
     UINT16* cpu_count = (UINT16*)((BYTE*)g_Core + 0x944);
     Sleep(500);
     *cpu_count = FRAME_SIZE;
     std::cout << *cpu_count << std::endl;
+
     return true;
 }
 
