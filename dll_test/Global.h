@@ -14,6 +14,8 @@ extern ULONG64   g_base_address;
 extern void*     g_core;
 extern INT64     g_RefreshRate_ptr;
 
+extern UCHAR*    g_img_array;
+
 struct Patten {
     std::string   UpdateData;
     INT32         UpdateData_offset;
@@ -28,4 +30,3 @@ struct Patten {
 };
 
 extern Patten g_patten;
-

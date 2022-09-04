@@ -46,3 +46,4 @@ template <typename Retn, typename ... Ts>
 Retn* address_offset(ULONG64 base, ULONG64 offset, Ts ... ts) {
     return address_offset(*(ULONG64*)base + offset, ts...);
 }
+

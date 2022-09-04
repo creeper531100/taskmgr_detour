@@ -4,7 +4,7 @@
 #include "Proc.h"
 
 constexpr int FRAME_SIZE = 38 * 39;
-constexpr int REFRESH_RATE = 33;
+constexpr int REFRESH_RATE = 87; //33
 
 UpdateData_t     o_UpdateData;
 IsServer_t       o_IsServer;
@@ -17,21 +17,28 @@ bool __fastcall IsServer(void* ret) {
     return o_IsServer(ret);
 }
 
-
 int64_t __fastcall UpdateData(void* ret) {
     int64_t return_data = o_UpdateData(ret);
     UINT a4, a5;
-    int deep = 50;
-    wchar_t text[5] = L"白癡";
+    wchar_t text[5];
+    
     for (int i = 0; i < FRAME_SIZE; i++) {
-        //swprintf_s(text, L"%d%%", deep);
-        GetBlockColors(ret, deep, &a4, &a5);
+        int8_t value = ((float)g_img_array[i] / 255.0) * 100;
+        swprintf_s(text, L"%d%%", value);
+        GetBlockColors(ret, value, &a4, &a5);
         SetBlockData(ret, i, text, a4, a5);
     }
+    g_img_array[0] = 87; // 代表更新
+
     return return_data;
 }
 
 DWORD WINAPI attach(LPVOID) {
+    //通訊
+    HANDLE hFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, TRUE, L"dllmemfilemap123");
+    LPVOID lpBase = ::MapViewOfFile(hFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+    g_img_array = (UCHAR*)lpBase;
+
     EnumWindows(EnumWindowsProc, GetCurrentProcessId());
     g_oWndProc = (WndProc_t)GetWindowLongPtr(g_HWND, GWLP_WNDPROC);
     SetWindowLongPtr(g_HWND, GWLP_WNDPROC, (LONG_PTR)WndProc);
@@ -63,9 +70,9 @@ DWORD WINAPI attach(LPVOID) {
 
     std::cout << u8"注入成功，可以使用了, core=" << *cpu_count << std::endl;
     *cpu_count = FRAME_SIZE;
-
     return true;
 }
+
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {
     switch (ul_reason_for_call) {
