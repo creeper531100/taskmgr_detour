@@ -4,17 +4,19 @@
 #include "Proc.h"
 
 constexpr int FRAME_SIZE = 38 * 39;
+constexpr int REFRESH_RATE = 500;
 
 UpdateData_t     o_UpdateData;
 IsServer_t       o_IsServer;
-SetRefreshRate_t o_SetRefreshRate;
+SetRefreshRate_t SetRefreshRate;
 SetBlockData_t   SetBlockData;
 GetBlockColors_t GetBlockColors;
 
 bool __fastcall IsServer(void* ret) {
-    g_Core = ret;
+    g_core = ret;
     return o_IsServer(ret);
 }
+
 
 int64_t __fastcall UpdateData(void* ret) {
     int64_t return_data = o_UpdateData(ret);
@@ -29,38 +31,38 @@ int64_t __fastcall UpdateData(void* ret) {
     return return_data;
 }
 
-int64_t __fastcall SetRefreshRate(int64_t ret, UINT a2) {
-    g_RefreshRate_ptr = ret;
-    return o_SetRefreshRate(ret, 60);
-}
-
 DWORD WINAPI attach(LPVOID) {
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
+    EnumWindows(EnumWindowsProc, GetCurrentProcessId());
     g_oWndProc = (WndProc_t)GetWindowLongPtr(g_HWND, GWLP_WNDPROC);
     SetWindowLongPtr(g_HWND, GWLP_WNDPROC, (LONG_PTR)WndProc);
-    EnumWindows(EnumWindowsProc, GetCurrentProcessId());
+    MODULEINFO module_info = get_module_info("taskmgr.exe");
 
-    g_BaseAddress    =           (ULONG64)(GetModuleInfo("taskmgr.exe").lpBaseOfDll);
-    o_UpdateData     =      (UpdateData_t)(g_BaseAddress + 0xC9CC8);
-    o_IsServer       =        (IsServer_t)(g_BaseAddress + 0x195BC);
-    o_SetRefreshRate =  (SetRefreshRate_t)(g_BaseAddress + 0x6063C);
-    GetBlockColors   =  (GetBlockColors_t)(g_BaseAddress + 0xC9158);
-    SetBlockData     =    (SetBlockData_t)(g_BaseAddress + 0xC9B70);
+    g_base_address    =           (ULONG64)module_info.lpBaseOfDll;
+    g_RefreshRate_ptr =  *address_offset<ULONG64>(g_base_address + 0x11C830, 0x110);
+
+    o_UpdateData      = (UpdateData_t)    (find_pattern(&module_info, patten.UpdateData) + patten.UpdateData_offset);
+    o_IsServer        = (IsServer_t)      (find_pattern(&module_info, patten.IsServer) + patten.IsServer_offset);
+    SetRefreshRate    = (SetRefreshRate_t)(find_pattern(&module_info, patten.SetRefreshRate) + patten.SetRefreshRate_offset);
+    GetBlockColors    = (GetBlockColors_t)(find_pattern(&module_info, patten.GetBlockColors) + patten.GetBlockColors_offset);
+    SetBlockData      = (SetBlockData_t)  (find_pattern(&module_info, patten.SetBlockData) + patten.SetBlockData_offset);
 
     DetourRestoreAfterWith();
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((PVOID*)&o_UpdateData, UpdateData);
     DetourAttach((PVOID*)&o_IsServer, IsServer);
-    DetourAttach((PVOID*)&o_SetRefreshRate, SetRefreshRate);
     DetourTransactionCommit();
-
-    while (!g_Core) {
+    
+    SetRefreshRate(g_RefreshRate_ptr, 60);
+    while (!g_core) {
         Sleep(500);
     }
 
-    UINT16* cpu_count = (UINT16*)((BYTE*)g_Core + 0x944);
+    UINT16* cpu_count = (UINT16*)((BYTE*)g_core + 0x944);
+    std::cout << g_core << "," << *cpu_count << std::endl;
+
     Sleep(500);
     *cpu_count = FRAME_SIZE;
     std::cout << *cpu_count << std::endl;
@@ -81,9 +83,17 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         break;
     case DLL_PROCESS_DETACH: {
         //MessageBoxW(NULL, L"結束掛勾", 0, 0);
-        o_SetRefreshRate(g_RefreshRate_ptr, 500);
+        SetRefreshRate(g_RefreshRate_ptr, 500);
         break;
     }
     }
     return TRUE;
 }
+
+/*
+    o_UpdateData      =      (UpdateData_t)(g_base_address + 0xC9CC8);
+    o_IsServer        =        (IsServer_t)(g_base_address + 0x195BC);
+    SetRefreshRate    =  (SetRefreshRate_t)(g_base_address + 0x6063C);
+    GetBlockColors    =  (GetBlockColors_t)(g_base_address + 0xC9158);
+    SetBlockData      =    (SetBlockData_t)(g_base_address + 0xC9B70);
+ */

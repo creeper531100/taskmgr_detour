@@ -2,7 +2,7 @@
 #include <filesystem>
 
 using namespace std;
-//#define Release
+#define Release
 
 int main() {
     SetConsoleOutputCP(CP_UTF8);
@@ -25,7 +25,7 @@ int main() {
     HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, lpStartAddress, loc, 0, NULL);
     WaitForSingleObject(hThread, INFINITE);
     if (hThread) {
-        printf("成功...\n");
+        printf(u8"成功...\n");
         VirtualFreeEx(hProcess, loc, MAX_PATH, MEM_RELEASE);
         CloseHandle(hThread);
     }

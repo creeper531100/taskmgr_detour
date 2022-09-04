@@ -1,7 +1,7 @@
 #include "pch.h"
 #include <Psapi.h>
 
-MODULEINFO GetModuleInfo(const char* szModule) {
+MODULEINFO get_module_info(const char* szModule) {
     MODULEINFO modinfo = { 0 };
     HMODULE hModule = GetModuleHandleA(szModule);
     if (hModule == 0) return modinfo;
@@ -9,17 +9,21 @@ MODULEINFO GetModuleInfo(const char* szModule) {
     return modinfo;
 }
 
-BOOLEAN bDataCompare(const BYTE* pData, const BYTE* bMask, const char* szMask) {
+//TODO: Àu¤Æ
+BOOLEAN b_data_compare(const BYTE* pData, const BYTE* bMask, const char* szMask) {
     for (; *szMask; ++szMask, ++pData, ++bMask)
         if (*szMask == 'x' && *pData != *bMask)
             return 0;
     return (*szMask) == 0;
 }
 
-UINT64 FindPattern(UINT64 dwAddress, UINT64 dwLen, BYTE* bMask, const char* szMask) {
-    for (UINT64 i = 0; i < dwLen; i++)
-        if (bDataCompare((BYTE*)(dwAddress + i), bMask, szMask))
-            return (UINT64)(dwAddress + i);
+UINT64 find_pattern(MODULEINFO* info, std::string bMask, std::string szMask = "") {
+    if(szMask.empty()) {
+        szMask = std::string(bMask.length(), 'x');
+    }
+    for (UINT64 i = 0; i < info->SizeOfImage; i++)
+        if (b_data_compare((BYTE*)((UINT64)info->lpBaseOfDll + i), (BYTE*)bMask.c_str(), szMask.c_str()))
+            return (UINT64)info->lpBaseOfDll + i;
     return 0;
 }
 
@@ -29,4 +33,16 @@ void shellcode_write(PVOID ptr, PVOID byte, SIZE_T size) {
     memset((PVOID)ptr, 0x90, size);
     memcpy((PVOID)ptr, byte, size);
     VirtualProtect((PVOID)ptr, size, cur, &tmp);
+}
+
+
+//(UINT16*)((BYTE*)g_core + 0x944);
+template <typename Retn>
+Retn* address_offset(ULONG64 base, ULONG64 offset) {
+    return (Retn*)(*(ULONG64*)base + offset);
+}
+
+template <typename Retn, typename ... Ts>
+Retn* address_offset(ULONG64 base, ULONG64 offset, Ts ... ts) {
+    return address_offset(*(ULONG64*)base + offset, ts...);
 }
