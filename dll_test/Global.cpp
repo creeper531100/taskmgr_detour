@@ -8,7 +8,7 @@ ULONG64   g_base_address    = 0;
 void*     g_core            = 0;
 INT64     g_RefreshRate_ptr = 0;
 
-Patten patten = {
+Patten g_patten = {
     "\x48\x8B\xCE\xE8\x4D\xF6\xFF\xFF\x8B\xD8", -0x4B,
     "\x48\x33\xCC\xE8\x33\x99\x01\x00", -0x39,
     "\xFF\x15\xE4\x61\x07\x00\x48\x8B\xC8\x48\x8B\xD3", -0x32,

@@ -27,5 +27,5 @@ struct Patten {
     INT32         GetBlockColors_offset;
 };
 
-extern Patten patten;
+extern Patten g_patten;
 
