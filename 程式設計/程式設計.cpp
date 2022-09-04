@@ -2,7 +2,7 @@
 #include <filesystem>
 
 using namespace std;
-#define Release
+//#define Release
 
 int main() {
     SetConsoleOutputCP(CP_UTF8);

@@ -39,8 +39,8 @@ DWORD WINAPI attach(LPVOID) {
     SetWindowLongPtr(g_HWND, GWLP_WNDPROC, (LONG_PTR)WndProc);
     MODULEINFO module_info = get_module_info("taskmgr.exe");
 
-    g_base_address    =           (ULONG64)module_info.lpBaseOfDll;
-    g_RefreshRate_ptr =  *address_offset<ULONG64>(g_base_address + 0x11C830, 0x110);
+    g_base_address    = (ULONG64)module_info.lpBaseOfDll;
+    g_RefreshRate_ptr = *address_offset<ULONG64>(g_base_address + 0x11C830, 0x110);
 
     o_UpdateData      = (UpdateData_t)    (find_pattern(&module_info, patten.UpdateData) + patten.UpdateData_offset);
     o_IsServer        = (IsServer_t)      (find_pattern(&module_info, patten.IsServer) + patten.IsServer_offset);
@@ -82,8 +82,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     case DLL_THREAD_DETACH:
         break;
     case DLL_PROCESS_DETACH: {
-        //MessageBoxW(NULL, L"結束掛勾", 0, 0);
         SetRefreshRate(g_RefreshRate_ptr, 500);
+        MessageBoxW(NULL, L"結束掛勾", 0, 0);
         break;
     }
     }
