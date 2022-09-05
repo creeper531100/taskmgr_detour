@@ -2,19 +2,26 @@
 #include <iostream>
 #include <Windows.h>
 #include <filesystem>
+#include <fstream>
 #include <TlHelp32.h>
 #include <opencv2/opencv.hpp>
 
+
 //#define Release
-static LPVOID lpvMem = NULL;
+
 static HANDLE hMapObject = NULL;
 constexpr int FRAME_SIZE = 38 * 39;
+cv::Mat screenshot(HWND path);
+
+struct DataPack {
+    UINT8 pixel[FRAME_SIZE];
+    BOOL frame_done;
+} * lpvMem;
 
 using namespace std;
 HANDLE GetProcessByName(wstring);
-inline unordered_map<string, cv::Mat> read_folder_as_map(string path);
 
-string Path = "C:\\Users\\creep\\source\\repos\\程式設計\\x64\\Release\\dll_test.dll";
+string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dll_test.dll";
 #ifdef Release
        Path = (std::filesystem::current_path().string() + "\\dll_test.dll");
 #endif
@@ -24,16 +31,10 @@ int main() {
     printf(u8"請等待注入...不要點擊任何按鈕\n");
     ShellExecuteA(nullptr, "open", "taskmgr", nullptr, nullptr, SW_SHOWNORMAL);
 
-    cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\擷取ssss.PNG");
-    cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
-    cv::resize(img, img, {39, 38});
-
-    uchar* data = img.data;
-    SIZE_T size = img.size().area() * sizeof(uchar) + 1;
-
-    hMapObject = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, size, L"dllmemfilemap123");
-    lpvMem = MapViewOfFile(hMapObject, FILE_MAP_WRITE, 0, 0, 0);
-    memcpy(lpvMem, data, size);
+    hMapObject = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(DataPack),
+                                   L"Global\\dllmemfilemap123");
+    lpvMem = (DataPack*)MapViewOfFile(hMapObject, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+    lpvMem->frame_done = FALSE;
 
     Sleep(2000);
     std::cout << "Current path is " << Path << '\n';
@@ -52,16 +53,31 @@ int main() {
         CloseHandle(hThread);
     }
 
-    ((UCHAR*)lpvMem)[FRAME_SIZE] = 0; // 代表未更新
+    cv::VideoCapture cap("E:\\7.mp4");
+    cv::Mat img;
+    HWND hwnd = FindWindowA(NULL, "工作管理員");
 
-    cv::Mat Mat2 = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\0取.PNG");;
-    while(1) {
-        if(((UCHAR*)lpvMem)[FRAME_SIZE]) {
-            Mat2.copyTo(img);
-            ((UCHAR*)lpvMem)[FRAME_SIZE] = 0;
+    cv::Size size = screenshot(hwnd).size();//screenshot(hwnd)
+    cv::VideoWriter video("out.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), 30.0, size, true);
+    cv::Mat mat2;
+
+    while (1) {
+        if (lpvMem->frame_done) {
+            cap >> img;
+            if (img.empty())
+                return 0;
+            cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
+            
+            cv::resize(img, img, {39, 38});
+            memcpy(lpvMem->pixel, img.data, FRAME_SIZE);
+            lpvMem->frame_done = FALSE;
+
+            cv::cvtColor(screenshot(hwnd), mat2, cv::COLOR_BGRA2BGR);
+            cv::resize(mat2, mat2, size);
+            video.write(mat2);
+           
         }
-        Sleep(10);
-        cout << (int)((UCHAR*)lpvMem)[FRAME_SIZE] << endl;
+        printf("");
     }
 }
 
@@ -77,11 +93,65 @@ HANDLE GetProcessByName(wstring name) {
                 pid = process.th32ProcessID;
                 break;
             }
-        } while (Process32Next(snapshot, &process));
+        }
+        while (Process32Next(snapshot, &process));
     }
     CloseHandle(snapshot);
     if (pid != 0) {
         return OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     }
     return NULL;
+}
+
+cv::Mat screenshot(HWND hwnd) {
+    HDC hwindowDC, hwindowCompatibleDC;
+
+    int height, width, srcheight, srcwidth;
+    HBITMAP hbwindow;
+    cv::Mat src;
+    BITMAPINFOHEADER bi;
+
+    hwindowDC = GetDC(hwnd);
+    hwindowCompatibleDC = CreateCompatibleDC(hwindowDC);
+    SetStretchBltMode(hwindowCompatibleDC, COLORONCOLOR);
+
+    RECT windowsize; // get the height and width of the screen
+    GetClientRect(hwnd, &windowsize);
+
+    srcheight = windowsize.bottom;
+    srcwidth = windowsize.right;
+    height = windowsize.bottom / 1; //change this to whatever size you want to resize to
+    width = windowsize.right / 1;
+
+    src.create(height, width, CV_8UC4);
+
+    // create a bitmap
+    hbwindow = CreateCompatibleBitmap(hwindowDC, width, height);
+    bi.biSize = sizeof(BITMAPINFOHEADER);
+    //http://msdn.microsoft.com/en-us/library/windows/window/dd183402%28v=vs.85%29.aspx
+    bi.biWidth = width;
+    bi.biHeight = -height; //this is the line that makes it draw upside down or not
+    bi.biPlanes = 1;
+    bi.biBitCount = 32;
+    bi.biCompression = BI_RGB;
+    bi.biSizeImage = 0;
+    bi.biXPelsPerMeter = 0;
+    bi.biYPelsPerMeter = 0;
+    bi.biClrUsed = 0;
+    bi.biClrImportant = 0;
+
+    // use the previously created device context with the bitmap
+    SelectObject(hwindowCompatibleDC, hbwindow);
+    // copy from the window device context to the bitmap device context
+    StretchBlt(hwindowCompatibleDC, 0, 0, width, height, hwindowDC, 0, 0, srcwidth, srcheight, SRCCOPY);
+    //change SRCCOPY to NOTSRCCOPY for wacky colors !
+    GetDIBits(hwindowCompatibleDC, hbwindow, 0, height, src.data, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
+    //copy from hwindowCompatibleDC to hbwindow
+
+    // avoid memory leak
+    DeleteObject(hbwindow);
+    DeleteDC(hwindowCompatibleDC);
+    ReleaseDC(hwnd, hwindowDC);
+
+    return src;
 }

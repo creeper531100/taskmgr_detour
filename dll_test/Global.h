@@ -7,14 +7,16 @@ using SetRefreshRate_t = INT64(__fastcall*)(INT64, UINT);
 using GetBlockColors_t = void(__fastcall*)(void*, int, UINT*, UINT*);
 using SetBlockData_t   = __int64(__fastcall*)(void*, UINT, wchar_t*, UINT, UINT);
 
+
+constexpr int FRAME_SIZE = 38 * 39;
+constexpr int REFRESH_RATE = 1; //33
+
 extern HINSTANCE g_hInstance;
 extern HWND      g_HWND;
 extern WndProc_t g_oWndProc;
 extern ULONG64   g_base_address;
 extern void*     g_core;
 extern INT64     g_RefreshRate_ptr;
-
-extern UCHAR*    g_img_array;
 
 struct Patten {
     std::string   UpdateData;
@@ -29,4 +31,10 @@ struct Patten {
     INT32         GetBlockColors_offset;
 };
 
+struct DataPack {
+    UINT8 pixel[FRAME_SIZE];
+    BOOL frame_done;
+};
+
+extern DataPack* o_data_pack;
 extern Patten g_patten;

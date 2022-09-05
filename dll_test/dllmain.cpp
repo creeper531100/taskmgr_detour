@@ -3,9 +3,6 @@
 #include "function.h"
 #include "Proc.h"
 
-constexpr int FRAME_SIZE = 38 * 39;
-constexpr int REFRESH_RATE = 500; //33
-
 UpdateData_t     o_UpdateData;
 IsServer_t       o_IsServer;
 SetRefreshRate_t SetRefreshRate;
@@ -17,27 +14,26 @@ bool __fastcall IsServer(void* ret) {
     return o_IsServer(ret);
 }
 
+
 int64_t __fastcall UpdateData(void* ret) {
     int64_t return_data = o_UpdateData(ret);
     UINT a4, a5;
     wchar_t text[5];
     
     for (int i = 0; i < FRAME_SIZE; i++) {
-        UINT value = 100 - (float)g_img_array[i] / 255.0 * 100;
+        UINT value = 100 - (float)o_data_pack->pixel[i] / 255.0 * 100;
         swprintf_s(text, L"%d%%", value);
         GetBlockColors(ret, value, &a4, &a5);
         SetBlockData(ret, i, text, a4, a5);
     }
-    g_img_array[FRAME_SIZE] = 0x87; // 代表更新
+
+    o_data_pack->frame_done = TRUE; // 代表更新
 
     return return_data;
 }
 
 DWORD WINAPI attach(LPVOID) {
     //通訊
-    HANDLE hFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, TRUE, L"dllmemfilemap123");
-    LPVOID lpBase = ::MapViewOfFile(hFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-    g_img_array = (UCHAR*)lpBase;
 
     EnumWindows(EnumWindowsProc, GetCurrentProcessId());
     g_oWndProc = (WndProc_t)GetWindowLongPtr(g_HWND, GWLP_WNDPROC);
@@ -81,6 +77,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         freopen("CONOUT$", "w", stdout);
         SetConsoleOutputCP(CP_UTF8);
 
+        HANDLE hFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, TRUE, L"Global\\dllmemfilemap123");
+        o_data_pack = (DataPack*)MapViewOfFile(hFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
         DWORD dwThreadId;
         g_hInstance = hModule;
         CreateThread(NULL, 0, attach, hModule, 0, &dwThreadId);
@@ -91,7 +90,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         break;
     case DLL_PROCESS_DETACH: {
         SetRefreshRate(g_RefreshRate_ptr, 500);
-        MessageBoxW(NULL, L"結束掛勾", 0, 0);
+        //MessageBoxW(NULL, L"結束掛勾", 0, 0);
         break;
     }
     }

@@ -8,7 +8,7 @@ ULONG64   g_base_address    = 0;
 void*     g_core            = 0;
 INT64     g_RefreshRate_ptr = 0;
 
-UCHAR*    g_img_array       = nullptr;
+DataPack* o_data_pack       = nullptr;
 
 Patten g_patten = {
     "\x48\x8B\xCE\xE8\x4D\xF6\xFF\xFF\x8B\xD8", -0x4B,
