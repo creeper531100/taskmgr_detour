@@ -14,7 +14,6 @@ bool __fastcall IsServer(void* ret) {
     return o_IsServer(ret);
 }
 
-
 int64_t __fastcall UpdateData(void* ret) {
     int64_t return_data = o_UpdateData(ret);
     UINT a4, a5;

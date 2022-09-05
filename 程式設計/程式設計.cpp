@@ -27,8 +27,12 @@ string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dl
 #endif
 
 int main() {
+    string video_path;
+    cout << "視頻=";
+    cin >> video_path;
+
     SetConsoleOutputCP(CP_UTF8);
-    printf(u8"請等待注入...不要點擊任何按鈕\n");
+    printf(u8"\n請等待注入...不要點擊任何按鈕\n");
     ShellExecuteA(nullptr, "open", "taskmgr", nullptr, nullptr, SW_SHOWNORMAL);
 
     hMapObject = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(DataPack),
@@ -53,9 +57,9 @@ int main() {
         CloseHandle(hThread);
     }
 
-    cv::VideoCapture cap("E:\\7.mp4");
+    cv::VideoCapture cap(video_path);
     cv::Mat img;
-    HWND hwnd = FindWindowA(NULL, "工作管理員");
+    HWND hwnd = FindWindowW(NULL, L"工作管理員");
 
     cv::Size size = screenshot(hwnd).size();//screenshot(hwnd)
     cv::VideoWriter video("out.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), 30.0, size, true);
