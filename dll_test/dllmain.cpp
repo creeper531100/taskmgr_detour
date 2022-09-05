@@ -4,7 +4,7 @@
 #include "Proc.h"
 
 constexpr int FRAME_SIZE = 38 * 39;
-constexpr int REFRESH_RATE = 87; //33
+constexpr int REFRESH_RATE = 500; //33
 
 UpdateData_t     o_UpdateData;
 IsServer_t       o_IsServer;
@@ -23,12 +23,12 @@ int64_t __fastcall UpdateData(void* ret) {
     wchar_t text[5];
     
     for (int i = 0; i < FRAME_SIZE; i++) {
-        int8_t value = ((float)g_img_array[i] / 255.0) * 100;
+        UINT value = 100 - (float)g_img_array[i] / 255.0 * 100;
         swprintf_s(text, L"%d%%", value);
         GetBlockColors(ret, value, &a4, &a5);
         SetBlockData(ret, i, text, a4, a5);
     }
-    g_img_array[0] = 87; // 代表更新
+    g_img_array[FRAME_SIZE] = 0x87; // 代表更新
 
     return return_data;
 }
