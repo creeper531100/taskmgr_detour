@@ -1,5 +1,8 @@
 #include "pch.h"
 #include <Psapi.h>
+#include <algorithm>
+#include <vector>
+#include<sstream>
 
 MODULEINFO get_module_info(const char* szModule) {
     MODULEINFO modinfo = { 0 };
@@ -7,24 +10,6 @@ MODULEINFO get_module_info(const char* szModule) {
     if (hModule == 0) return modinfo;
     GetModuleInformation(GetCurrentProcess(), hModule, &modinfo, sizeof(MODULEINFO));
     return modinfo;
-}
-
-//TODO: Àu¤Æ
-BOOLEAN b_data_compare(const BYTE* pData, const BYTE* bMask, const char* szMask) {
-    for (; *szMask; ++szMask, ++pData, ++bMask)
-        if (*szMask == 'x' && *pData != *bMask)
-            return 0;
-    return (*szMask) == 0;
-}
-
-UINT64 find_pattern(MODULEINFO* info, std::string bMask, std::string szMask = "") {
-    if(szMask.empty()) {
-        szMask = std::string(bMask.length(), 'x');
-    }
-    for (UINT64 i = 0; i < info->SizeOfImage; i++)
-        if (b_data_compare((BYTE*)((UINT64)info->lpBaseOfDll + i), (BYTE*)bMask.c_str(), szMask.c_str()))
-            return (UINT64)info->lpBaseOfDll + i;
-    return 0;
 }
 
 void shellcode_write(PVOID ptr, PVOID byte, SIZE_T size) {
@@ -35,8 +20,6 @@ void shellcode_write(PVOID ptr, PVOID byte, SIZE_T size) {
     VirtualProtect((PVOID)ptr, size, cur, &tmp);
 }
 
-
-//(UINT16*)((BYTE*)g_core + 0x944);
 template <typename Retn>
 Retn* address_offset(ULONG64 base, ULONG64 offset) {
     return (Retn*)(*(ULONG64*)base + offset);
@@ -47,3 +30,31 @@ Retn* address_offset(ULONG64 base, ULONG64 offset, Ts ... ts) {
     return address_offset(*(ULONG64*)base + offset, ts...);
 }
 
+UINT64 find_pattern(MODULEINFO* hmodule, std::string pattern) {
+    std::transform(pattern.begin(), pattern.end(), pattern.begin(), toupper);
+    std::istringstream iss(pattern);
+    std::vector<int16_t> address_arr;
+    std::string tmp;
+
+    while (std::getline(iss, tmp, ' ')) {
+        if (tmp != "??")
+            address_arr.push_back(stoi(tmp, 0, 16));
+        else
+            address_arr.push_back(-1);
+    }
+
+    BYTE* lp_buffer = (BYTE*)((UINT64)hmodule->lpBaseOfDll);
+    for (uint64_t i = 0; i < hmodule->SizeOfImage; i++) {
+        bool found = true;
+        for (uint64_t j = 0; j < address_arr.size(); ++j) {
+            if (lp_buffer[i + j] != address_arr[j] && address_arr[j] != -1) {
+                found = false;
+                break;
+            }
+        }
+        if (found) {
+            return (UINT64)hmodule->lpBaseOfDll + i;
+        }
+    }
+    return 0;
+}

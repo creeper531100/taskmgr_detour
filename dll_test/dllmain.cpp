@@ -9,30 +9,29 @@ SetRefreshRate_t SetRefreshRate;
 SetBlockData_t   SetBlockData;
 GetBlockColors_t GetBlockColors;
 
-bool __fastcall IsServer(void* ret) {
-    g_core = ret;
-    return o_IsServer(ret);
+bool __fastcall IsServer(void* self) {
+    g_core = self;
+    return o_IsServer(self);
 }
 
-int64_t __fastcall UpdateData(void* ret) {
-    int64_t return_data = o_UpdateData(ret);
+int64_t __fastcall UpdateData(void* self) {
+    int64_t ret = o_UpdateData(self);
     UINT a4, a5;
     wchar_t text[5];
     
     for (int i = 0; i < o_data_pack->frame_size; i++) {
         UINT value = 100 - (float)o_data_pack->pixel[i] / 255.0 * 100;
         swprintf_s(text, L"%d%%", value);
-        GetBlockColors(ret, value, &a4, &a5);
-        SetBlockData(ret, i, text, a4, a5);
+        GetBlockColors(self, value, &a4, &a5);
+        SetBlockData(self, i, text, a4, a5);
     }
 
     o_data_pack->frame_done = TRUE; // 代表更新
 
-    return return_data;
+    return ret;
 }
 
 DWORD WINAPI attach(LPVOID) {
-    //EnumWindows(EnumWindowsProc, GetCurrentProcessId());
     g_oWndProc = (WndProc_t)GetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC);
     SetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
     MODULEINFO module_info = get_module_info("Taskmgr.exe");

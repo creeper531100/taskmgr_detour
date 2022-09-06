@@ -12,7 +12,6 @@ constexpr int MAX_SIZE = 100 * 100;
 constexpr int REFRESH_RATE = 1; //33
 
 extern HINSTANCE g_hInstance;
-//extern HWND      g_HWND;
 extern WndProc_t g_oWndProc;
 extern ULONG64   g_base_address;
 extern void*     g_core;
