@@ -19,7 +19,7 @@ int64_t __fastcall UpdateData(void* ret) {
     UINT a4, a5;
     wchar_t text[5];
     
-    for (int i = 0; i < FRAME_SIZE; i++) {
+    for (int i = 0; i < o_data_pack->frame_size; i++) {
         UINT value = 100 - (float)o_data_pack->pixel[i] / 255.0 * 100;
         swprintf_s(text, L"%d%%", value);
         GetBlockColors(ret, value, &a4, &a5);
@@ -32,8 +32,6 @@ int64_t __fastcall UpdateData(void* ret) {
 }
 
 DWORD WINAPI attach(LPVOID) {
-    //通訊
-
     EnumWindows(EnumWindowsProc, GetCurrentProcessId());
     g_oWndProc = (WndProc_t)GetWindowLongPtr(g_HWND, GWLP_WNDPROC);
     SetWindowLongPtr(g_HWND, GWLP_WNDPROC, (LONG_PTR)WndProc);
@@ -64,7 +62,7 @@ DWORD WINAPI attach(LPVOID) {
     Sleep(500);
 
     std::cout << u8"注入成功，可以使用了, core=" << *cpu_count << std::endl;
-    *cpu_count = FRAME_SIZE;
+    *cpu_count = o_data_pack->frame_size;
     return true;
 }
 
@@ -76,6 +74,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         freopen("CONOUT$", "w", stdout);
         SetConsoleOutputCP(CP_UTF8);
 
+        //通訊
         HANDLE hFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, TRUE, L"Global\\dllmemfilemap123");
         o_data_pack = (DataPack*)MapViewOfFile(hFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 

@@ -8,7 +8,7 @@ using GetBlockColors_t = void(__fastcall*)(void*, int, UINT*, UINT*);
 using SetBlockData_t   = __int64(__fastcall*)(void*, UINT, wchar_t*, UINT, UINT);
 
 
-constexpr int FRAME_SIZE = 38 * 39;
+constexpr int MAX_SIZE = 100 * 100;
 constexpr int REFRESH_RATE = 1; //33
 
 extern HINSTANCE g_hInstance;
@@ -32,7 +32,8 @@ struct Patten {
 };
 
 struct DataPack {
-    UINT8 pixel[FRAME_SIZE];
+    UINT8 pixel[MAX_SIZE];
+    UINT16 frame_size;
     BOOL frame_done;
 };
 

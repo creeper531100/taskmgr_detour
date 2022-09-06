@@ -2,48 +2,52 @@
 #include <iostream>
 #include <Windows.h>
 #include <filesystem>
-#include <fstream>
 #include <TlHelp32.h>
 #include <opencv2/opencv.hpp>
-
+using namespace std;
 
 //#define Release
 
-static HANDLE hMapObject = NULL;
 constexpr int FRAME_SIZE = 38 * 39;
-cv::Mat screenshot(HWND path);
+constexpr int MAX_SIZE   = 100 * 100;
+HWND g_HWND;
+
+cv::Mat screenshot(HWND);
+HANDLE GetProcessByName(wstring, DWORD*);
+BOOL CALLBACK EnumWindowsProc(HWND, LPARAM);
 
 struct DataPack {
-    UINT8 pixel[FRAME_SIZE];
+    UINT8 pixel[MAX_SIZE];
+    UINT16 frame_size;
     BOOL frame_done;
-} * lpvMem;
-
-using namespace std;
-HANDLE GetProcessByName(wstring);
-
-string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dll_test.dll";
-#ifdef Release
-       Path = (std::filesystem::current_path().string() + "\\dll_test.dll");
-#endif
+} *lpvMem;
 
 int main() {
-    string video_path;
-    cout << "視頻=";
+    string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dll_test.dll";
+    string video_path = "E:\\360p.mp4";
+
+#ifdef Release
+    Path = (std::filesystem::current_path().string() + "\\dll_test.dll");
+    cout << u8"\"視頻\"=";
     cin >> video_path;
+#endif
 
     SetConsoleOutputCP(CP_UTF8);
     printf(u8"\n請等待注入...不要點擊任何按鈕\n");
     ShellExecuteA(nullptr, "open", "taskmgr", nullptr, nullptr, SW_SHOWNORMAL);
 
-    hMapObject = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(DataPack),
+    static HANDLE hMapObject = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(DataPack),
                                    L"Global\\dllmemfilemap123");
     lpvMem = (DataPack*)MapViewOfFile(hMapObject, FILE_MAP_ALL_ACCESS, 0, 0, 0);
     lpvMem->frame_done = FALSE;
+    lpvMem->frame_size = FRAME_SIZE;
 
     Sleep(2000);
     std::cout << "Current path is " << Path << '\n';
 
-    HANDLE hProcess = GetProcessByName(L"Taskmgr.exe");
+    DWORD pid;
+    HANDLE hProcess = GetProcessByName(L"Taskmgr.exe", &pid);
+
     LPVOID loc = VirtualAllocEx(hProcess, NULL, MAX_PATH, MEM_COMMIT, PAGE_READWRITE);
     WriteProcessMemory(hProcess, loc, Path.c_str(), Path.length(), NULL);
     HMODULE hModule = LoadLibraryW(L"Kernel32.dll");
@@ -58,35 +62,36 @@ int main() {
     }
 
     cv::VideoCapture cap(video_path);
-    cv::Mat img;
-    HWND hwnd = FindWindowW(NULL, L"工作管理員");
+    cv::Mat img, tmp;
 
-    cv::Size size = screenshot(hwnd).size();//screenshot(hwnd)
-    cv::VideoWriter video("out.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), 30.0, size, true);
-    cv::Mat mat2;
+    EnumWindows(EnumWindowsProc, pid);
+    cv::Size dsize = screenshot(g_HWND).size();//screenshot(hwnd)
+    double fps = cap.get(cv::CAP_PROP_FPS);
 
+    cv::VideoWriter video("out.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), fps, dsize, true);
+
+    int useless_var = 0;
     while (1) {
         if (lpvMem->frame_done) {
             cap >> img;
             if (img.empty())
-                return 0;
+                break;
             cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
             
             cv::resize(img, img, {39, 38});
-            memcpy(lpvMem->pixel, img.data, FRAME_SIZE);
+            memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
             lpvMem->frame_done = FALSE;
 
-            cv::cvtColor(screenshot(hwnd), mat2, cv::COLOR_BGRA2BGR);
-            cv::resize(mat2, mat2, size);
-            video.write(mat2);
-           
+            cv::cvtColor(screenshot(g_HWND), tmp, cv::COLOR_BGRA2BGR);
+            cv::resize(tmp, tmp, dsize);
+            video.write(tmp);
         }
-        printf("");
+        useless_var = 1; //卡住編譯器優化
     }
+    printf("%d\n", useless_var);
 }
 
-HANDLE GetProcessByName(wstring name) {
-    DWORD pid = 0;
+HANDLE GetProcessByName(wstring name, DWORD* pid) {
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     PROCESSENTRY32 process;
     ZeroMemory(&process, sizeof(process));
@@ -94,17 +99,27 @@ HANDLE GetProcessByName(wstring name) {
     if (Process32First(snapshot, &process)) {
         do {
             if (wstring(process.szExeFile) == name) {
-                pid = process.th32ProcessID;
+                *pid = process.th32ProcessID;
                 break;
             }
         }
         while (Process32Next(snapshot, &process));
     }
     CloseHandle(snapshot);
-    if (pid != 0) {
-        return OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+    if (*pid != 0) {
+        return OpenProcess(PROCESS_ALL_ACCESS, FALSE, *pid);
     }
     return NULL;
+}
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
+    DWORD lpdwProcessId;
+    GetWindowThreadProcessId(hwnd, &lpdwProcessId);
+    if (lpdwProcessId == lParam) {
+        g_HWND = hwnd;
+        return FALSE;
+    }
+    return TRUE;
 }
 
 cv::Mat screenshot(HWND hwnd) {
