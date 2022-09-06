@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 using namespace std;
 
-//#define Release
+#define Release
 
 constexpr int FRAME_SIZE = 38 * 39;
 constexpr int MAX_SIZE   = 100 * 100;
@@ -25,6 +25,7 @@ struct DataPack {
 int main() {
     string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dll_test.dll";
     string video_path = "E:\\360p.mp4";
+    SetConsoleOutputCP(CP_UTF8);
 
 #ifdef Release
     Path = (std::filesystem::current_path().string() + "\\dll_test.dll");
@@ -32,7 +33,6 @@ int main() {
     cin >> video_path;
 #endif
 
-    SetConsoleOutputCP(CP_UTF8);
     printf(u8"\n請等待注入...不要點擊任何按鈕\n");
     ShellExecuteA(nullptr, "open", "taskmgr", nullptr, nullptr, SW_SHOWNORMAL);
 
@@ -63,8 +63,12 @@ int main() {
 
     cv::VideoCapture cap(video_path);
     cv::Mat img, tmp;
-
+#ifndef Release
     EnumWindows(EnumWindowsProc, pid);
+#else
+    g_HWND = FindWindowW(NULL, L"工作管理員");
+#endif
+
     cv::Size dsize = screenshot(g_HWND).size();//screenshot(hwnd)
     double fps = cap.get(cv::CAP_PROP_FPS);
 
