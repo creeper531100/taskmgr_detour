@@ -32,9 +32,9 @@ int64_t __fastcall UpdateData(void* ret) {
 }
 
 DWORD WINAPI attach(LPVOID) {
-    EnumWindows(EnumWindowsProc, GetCurrentProcessId());
-    g_oWndProc = (WndProc_t)GetWindowLongPtr(g_HWND, GWLP_WNDPROC);
-    SetWindowLongPtr(g_HWND, GWLP_WNDPROC, (LONG_PTR)WndProc);
+    //EnumWindows(EnumWindowsProc, GetCurrentProcessId());
+    g_oWndProc = (WndProc_t)GetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC);
+    SetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
     MODULEINFO module_info = get_module_info("Taskmgr.exe");
 
     g_base_address    = (ULONG64)module_info.lpBaseOfDll;

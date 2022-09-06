@@ -6,27 +6,28 @@
 #include <opencv2/opencv.hpp>
 using namespace std;
 
-#define Release
+//#define Release
 
 constexpr int FRAME_SIZE = 38 * 39;
-constexpr int MAX_SIZE   = 100 * 100;
+constexpr int MAX_SIZE = 100 * 100;
 HWND g_HWND;
 
 cv::Mat screenshot(HWND);
 HANDLE GetProcessByName(wstring, DWORD*);
-BOOL CALLBACK EnumWindowsProc(HWND, LPARAM);
+static BOOL CALLBACK enumWindowCallback(HWND, LPARAM);
 
 struct DataPack {
     UINT8 pixel[MAX_SIZE];
     UINT16 frame_size;
+    HWND hwnd;
     BOOL frame_done;
-} *lpvMem;
+} * lpvMem;
 
 int main() {
     string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dll_test.dll";
     string video_path = "E:\\360p.mp4";
     SetConsoleOutputCP(CP_UTF8);
-
+    
 #ifdef Release
     Path = (std::filesystem::current_path().string() + "\\dll_test.dll");
     cout << u8"\"視頻\"=";
@@ -37,16 +38,21 @@ int main() {
     ShellExecuteA(nullptr, "open", "taskmgr", nullptr, nullptr, SW_SHOWNORMAL);
 
     static HANDLE hMapObject = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(DataPack),
-                                   L"Global\\dllmemfilemap123");
+                                                 L"Global\\dllmemfilemap123");
+
+
     lpvMem = (DataPack*)MapViewOfFile(hMapObject, FILE_MAP_ALL_ACCESS, 0, 0, 0);
     lpvMem->frame_done = FALSE;
     lpvMem->frame_size = FRAME_SIZE;
 
     Sleep(2000);
-    std::cout << "Current path is " << Path << '\n';
 
     DWORD pid;
     HANDLE hProcess = GetProcessByName(L"Taskmgr.exe", &pid);
+    EnumWindows(enumWindowCallback, pid);
+    lpvMem->hwnd = g_HWND;
+
+    std::cout << "Current path is " << Path << '\n';
 
     LPVOID loc = VirtualAllocEx(hProcess, NULL, MAX_PATH, MEM_COMMIT, PAGE_READWRITE);
     WriteProcessMemory(hProcess, loc, Path.c_str(), Path.length(), NULL);
@@ -63,15 +69,9 @@ int main() {
 
     cv::VideoCapture cap(video_path);
     cv::Mat img, tmp;
-#ifndef Release
-    EnumWindows(EnumWindowsProc, pid);
-#else
-    g_HWND = FindWindowW(NULL, L"工作管理員");
-#endif
 
-    cv::Size dsize = screenshot(g_HWND).size();//screenshot(hwnd)
+    cv::Size dsize = screenshot(g_HWND).size(); //screenshot(hwnd)
     double fps = cap.get(cv::CAP_PROP_FPS);
-
     cv::VideoWriter video("out.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), fps, dsize, true);
 
     int useless_var = 0;
@@ -81,7 +81,7 @@ int main() {
             if (img.empty())
                 break;
             cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
-            
+
             cv::resize(img, img, {39, 38});
             memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
             lpvMem->frame_done = FALSE;
@@ -110,17 +110,18 @@ HANDLE GetProcessByName(wstring name, DWORD* pid) {
         while (Process32Next(snapshot, &process));
     }
     CloseHandle(snapshot);
+
     if (*pid != 0) {
         return OpenProcess(PROCESS_ALL_ACCESS, FALSE, *pid);
     }
     return NULL;
 }
 
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
-    DWORD lpdwProcessId;
-    GetWindowThreadProcessId(hwnd, &lpdwProcessId);
-    if (lpdwProcessId == lParam) {
-        g_HWND = hwnd;
+static BOOL CALLBACK enumWindowCallback(HWND hWnd, LPARAM lparam) {
+    DWORD dwProcessId = 0;
+    GetWindowThreadProcessId(hWnd, &dwProcessId);
+    if (lparam == dwProcessId && IsWindowVisible(hWnd)) {
+        g_HWND = hWnd;
         return FALSE;
     }
     return TRUE;

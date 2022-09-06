@@ -2,7 +2,7 @@
 #include "Global.h"
 
 HINSTANCE g_hInstance       = nullptr;
-HWND      g_HWND            = nullptr;
+//HWND      g_HWND            = nullptr;
 WndProc_t g_oWndProc        = nullptr;
 ULONG64   g_base_address    = 0;
 void*     g_core            = 0;

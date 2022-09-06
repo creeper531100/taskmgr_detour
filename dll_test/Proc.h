@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "pch.h"
 
-BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
+/*BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
     DWORD lpdwProcessId;
     GetWindowThreadProcessId(hwnd, &lpdwProcessId);
     if (lpdwProcessId == lParam) {
@@ -9,7 +9,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
         return FALSE;
     }
     return TRUE;
-}
+}*/
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     return g_oWndProc(hwnd, message, wParam, lParam);

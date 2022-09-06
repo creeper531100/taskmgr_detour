@@ -12,7 +12,7 @@ constexpr int MAX_SIZE = 100 * 100;
 constexpr int REFRESH_RATE = 1; //33
 
 extern HINSTANCE g_hInstance;
-extern HWND      g_HWND;
+//extern HWND      g_HWND;
 extern WndProc_t g_oWndProc;
 extern ULONG64   g_base_address;
 extern void*     g_core;
@@ -34,6 +34,7 @@ struct Patten {
 struct DataPack {
     UINT8 pixel[MAX_SIZE];
     UINT16 frame_size;
+    HWND hwnd;
     BOOL frame_done;
 };
 
