@@ -7,6 +7,7 @@
 using namespace std;
 
 //#define Release
+#define Release
 
 constexpr int FRAME_SIZE = 38 * 39;
 constexpr int MAX_SIZE = 100 * 100;
@@ -14,14 +15,14 @@ HWND g_HWND;
 
 cv::Mat screenshot(HWND);
 HANDLE GetProcessByName(wstring, DWORD*);
-static BOOL CALLBACK enumWindowCallback(HWND, LPARAM);
+static BOOL CALLBACK EnumWindowCallback(HWND, LPARAM);
 
 struct DataPack {
     UINT8 pixel[MAX_SIZE];
     UINT16 frame_size;
     HWND hwnd;
     BOOL frame_done;
-} * lpvMem;
+} *lpvMem;
 
 int main() {
     string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dll_test.dll";
@@ -40,7 +41,6 @@ int main() {
     static HANDLE hMapObject = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(DataPack),
                                                  L"Global\\dllmemfilemap123");
 
-
     lpvMem = (DataPack*)MapViewOfFile(hMapObject, FILE_MAP_ALL_ACCESS, 0, 0, 0);
     lpvMem->frame_done = FALSE;
     lpvMem->frame_size = FRAME_SIZE;
@@ -49,7 +49,7 @@ int main() {
 
     DWORD pid;
     HANDLE hProcess = GetProcessByName(L"Taskmgr.exe", &pid);
-    EnumWindows(enumWindowCallback, pid);
+    EnumWindows(EnumWindowCallback, pid);
     lpvMem->hwnd = g_HWND;
 
     std::cout << "Current path is " << Path << '\n';
@@ -117,7 +117,7 @@ HANDLE GetProcessByName(wstring name, DWORD* pid) {
     return NULL;
 }
 
-static BOOL CALLBACK enumWindowCallback(HWND hWnd, LPARAM lparam) {
+static BOOL CALLBACK EnumWindowCallback(HWND hWnd, LPARAM lparam) {
     DWORD dwProcessId = 0;
     GetWindowThreadProcessId(hWnd, &dwProcessId);
     if (lparam == dwProcessId && IsWindowVisible(hWnd)) {
