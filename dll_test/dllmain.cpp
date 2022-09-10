@@ -3,6 +3,7 @@
 #include "function.h"
 #include "Proc.h"
 
+//RefreshRate
 IsServer_t       o_IsServer;
 SetRefreshRate_t SetRefreshRate;
 
@@ -10,7 +11,7 @@ bool __fastcall IsServer(void* self) {
     g_core = self;
     return o_IsServer(self);
 }
-
+//HeatMap
 SetBlockData_t   SetBlockData;
 GetBlockColors_t GetBlockColors;
 UpdateData_t     o_UpdateData;
@@ -32,6 +33,7 @@ int64_t __fastcall UpdateData(void* self) {
     return ret;
 }
 
+//Chart
 CvSetData_t CvSetData;
 UpdateQuery_t o_UpdateChartData;
 
@@ -51,9 +53,9 @@ __int64 __fastcall UpdateChartData(void* a1, HWND a2) {
         varg.vt = VT_R8; //VT_R8 -> double
         varg.dblVal = unif(rng); //set value
         CvSetData(CVArray, 59 - i, &varg); //draw
-        SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
     }
 
+    SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
     return 0;
 }
 

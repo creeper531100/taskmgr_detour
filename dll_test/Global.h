@@ -12,7 +12,7 @@ using UpdateQuery_t    = __int64(__fastcall*)(void*, HWND a2);
 using CvSetData_t      = long(*)(unsigned __int64, unsigned long, tagVARIANT*);
 
 constexpr int MAX_SIZE = 100 * 100;
-constexpr int REFRESH_RATE = 500; //500
+constexpr int REFRESH_RATE = 1; //500
 
 extern WndProc_t g_oWndProc;
 extern QWORD     g_base_address;
