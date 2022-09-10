@@ -3,16 +3,17 @@
 #include "function.h"
 #include "Proc.h"
 
-UpdateData_t     o_UpdateData;
 IsServer_t       o_IsServer;
 SetRefreshRate_t SetRefreshRate;
-SetBlockData_t   SetBlockData;
-GetBlockColors_t GetBlockColors;
 
 bool __fastcall IsServer(void* self) {
     g_core = self;
     return o_IsServer(self);
 }
+
+SetBlockData_t   SetBlockData;
+GetBlockColors_t GetBlockColors;
+UpdateData_t     o_UpdateData;
 
 int64_t __fastcall UpdateData(void* self) {
     int64_t ret = o_UpdateData(self);
@@ -31,13 +32,39 @@ int64_t __fastcall UpdateData(void* self) {
     return ret;
 }
 
+CvSetData_t CvSetData;
+UpdateQuery_t o_UpdateChartData;
+
+__int64 __fastcall UpdateChartData(void* a1, HWND a2) {
+    std::mt19937 rng(time(0));
+    std::uniform_real_distribution<float> unif(0.0, 100.0);
+    QWORD CVArray = *((QWORD*)a1 + 55);
+    VARIANTARG varg;
+
+    DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
+    if (*(QWORD*)v6 != g_base_address + 0xCECC8) { //WdcCpuMonitor
+        return o_UpdateChartData(a1, a2);
+    }
+
+    for (int i = 0; i < 60; i++) {
+        VariantInit(&varg);
+        varg.vt = VT_R8; //VT_R8 -> double
+        varg.dblVal = unif(rng); //set value
+        CvSetData(CVArray, 59 - i, &varg); //draw
+        SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
+    }
+
+    return 0;
+}
+
+
 DWORD WINAPI attach(LPVOID) {
     g_oWndProc = (WndProc_t)GetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC);
     SetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
     MODULEINFO module_info = get_module_info("Taskmgr.exe");
 
-    g_base_address    = (ULONG64)module_info.lpBaseOfDll;
-    g_RefreshRate_ptr = *address_offset<ULONG64>(g_base_address + 0x11C830, 0x110);
+    g_base_address    = (QWORD)module_info.lpBaseOfDll;
+    g_RefreshRate_ptr = *address_offset<QWORD>(g_base_address + 0x11C830, 0x110);
 
     o_UpdateData      = (UpdateData_t)    (find_pattern(&module_info, g_patten.UpdateData) + g_patten.UpdateData_offset);
     o_IsServer        = (IsServer_t)      (find_pattern(&module_info, g_patten.IsServer) + g_patten.IsServer_offset);
@@ -45,17 +72,16 @@ DWORD WINAPI attach(LPVOID) {
     GetBlockColors    = (GetBlockColors_t)(find_pattern(&module_info, g_patten.GetBlockColors) + g_patten.GetBlockColors_offset);
     SetBlockData      = (SetBlockData_t)  (find_pattern(&module_info, g_patten.SetBlockData) + g_patten.SetBlockData_offset);
 
-    o_UpdateQuery     = (UpdateQuery_t)(g_base_address + 0x7D9AC);
-    HMODULE lib       = LoadLibraryW(L"CHARTV.dll");
-    CvSetData         = (CvSetData_t)GetProcAddress(lib, "CvSetData");
+    o_UpdateChartData = (UpdateQuery_t)(g_base_address + 0x7D9AC);
+    HMODULE cv_lib    = LoadLibraryW(L"CHARTV.dll");
+    CvSetData         = (CvSetData_t)GetProcAddress(cv_lib, "CvSetData");
 
     DetourRestoreAfterWith();
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((PVOID*)&o_UpdateData, UpdateData);
     DetourAttach((PVOID*)&o_IsServer, IsServer);
-    DetourAttach((PVOID*)&o_UpdateQuery, UpdateQuery);
-
+    DetourAttach((PVOID*)&o_UpdateChartData, UpdateChartData);
     DetourTransactionCommit();
     
     SetRefreshRate(g_RefreshRate_ptr, REFRESH_RATE);

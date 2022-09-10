@@ -8,7 +8,7 @@ using namespace std;
 
 //#define Release
 #define DEBUG_NEW_FN
-#define CMPUTER2
+//#define CMPUTER2
 
 constexpr int FRAME_SIZE = 38 * 39;
 constexpr int MAX_SIZE = 100 * 100;

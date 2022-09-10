@@ -21,13 +21,13 @@ void shellcode_write(PVOID ptr, PVOID byte, SIZE_T size) {
 }
 
 template <typename Retn>
-Retn* address_offset(ULONG64 base, ULONG64 offset) {
-    return (Retn*)(*(ULONG64*)base + offset);
+Retn* address_offset(QWORD base, QWORD offset) {
+    return (Retn*)(*(QWORD*)base + offset);
 }
 
 template <typename Retn, typename ... Ts>
-Retn* address_offset(ULONG64 base, ULONG64 offset, Ts ... ts) {
-    return address_offset(*(ULONG64*)base + offset, ts...);
+Retn* address_offset(QWORD base, QWORD offset, Ts ... ts) {
+    return address_offset(*(QWORD*)base + offset, ts...);
 }
 
 UINT64 find_pattern(MODULEINFO* hmodule, std::string pattern) {

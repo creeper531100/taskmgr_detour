@@ -2,7 +2,7 @@
 #include "Global.h"
 
 WndProc_t g_oWndProc        = nullptr;
-ULONG64   g_base_address    = 0;
+QWORD     g_base_address    = 0;
 void*     g_core            = 0;
 INT64     g_RefreshRate_ptr = 0;
 
