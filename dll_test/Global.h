@@ -7,11 +7,9 @@ using SetRefreshRate_t = INT64(__fastcall*)(INT64, UINT);
 using GetBlockColors_t = void(__fastcall*)(void*, int, UINT*, UINT*);
 using SetBlockData_t   = __int64(__fastcall*)(void*, UINT, wchar_t*, UINT, UINT);
 
-
 constexpr int MAX_SIZE = 100 * 100;
-constexpr int REFRESH_RATE = 1; //33
+constexpr int REFRESH_RATE = 500; //500
 
-extern HINSTANCE g_hInstance;
 extern WndProc_t g_oWndProc;
 extern ULONG64   g_base_address;
 extern void*     g_core;
