@@ -14,6 +14,7 @@
 #include <detours/detours.h>
 #include "Global.h"
 
+
 #ifdef BUILD_SHARED
 #define API __declspec(dllexport)
 #else

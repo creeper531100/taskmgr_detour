@@ -45,11 +45,17 @@ DWORD WINAPI attach(LPVOID) {
     GetBlockColors    = (GetBlockColors_t)(find_pattern(&module_info, g_patten.GetBlockColors) + g_patten.GetBlockColors_offset);
     SetBlockData      = (SetBlockData_t)  (find_pattern(&module_info, g_patten.SetBlockData) + g_patten.SetBlockData_offset);
 
+    o_UpdateQuery     = (UpdateQuery_t)(g_base_address + 0x7D9AC);
+    HMODULE lib       = LoadLibraryW(L"CHARTV.dll");
+    CvSetData         = (CvSetData_t)GetProcAddress(lib, "CvSetData");
+
     DetourRestoreAfterWith();
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((PVOID*)&o_UpdateData, UpdateData);
     DetourAttach((PVOID*)&o_IsServer, IsServer);
+    DetourAttach((PVOID*)&o_UpdateQuery, UpdateQuery);
+
     DetourTransactionCommit();
     
     SetRefreshRate(g_RefreshRate_ptr, REFRESH_RATE);
@@ -78,7 +84,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
         o_data_pack = (DataPack*)MapViewOfFile(hFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
         DWORD dwThreadId;
-        g_hInstance = hModule;
         CreateThread(NULL, 0, attach, hModule, 0, &dwThreadId);
         break;
     }
