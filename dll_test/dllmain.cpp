@@ -48,7 +48,6 @@ DWORD WINAPI attach(LPVOID) {
     o_UpdateQuery     = (UpdateQuery_t)(g_base_address + 0x7D9AC);
     HMODULE lib       = LoadLibraryW(L"CHARTV.dll");
     CvSetData         = (CvSetData_t)GetProcAddress(lib, "CvSetData");
-    std::cout << CvSetData << std::endl;
 
     DetourRestoreAfterWith();
     DetourTransactionBegin();
