@@ -4,13 +4,20 @@
 #include "Proc.h"
 
 //RefreshRate
-IsServer_t       o_IsServer;
-SetRefreshRate_t SetRefreshRate;
+SetRefreshRate_t o_SetRefreshRate;
+__int64 __fastcall SetRefreshRate(__int64 a1, signed int a2) {
+    g_RefreshRate_ptr = a1;
+    return o_SetRefreshRate(a1, a2);
+}
 
+//IsServer_t
+IsServer_t       o_IsServer;
 bool __fastcall IsServer(void* self) {
     g_core = self;
+    std::cout << self << std::endl;
     return o_IsServer(self);
 }
+
 //HeatMap
 SetBlockData_t   SetBlockData;
 GetBlockColors_t GetBlockColors;
@@ -59,24 +66,36 @@ __int64 __fastcall UpdateChartData(void* a1, HWND a2) {
     return 0;
 }
 
-
 DWORD WINAPI attach(LPVOID) {
     g_oWndProc = (WndProc_t)GetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC);
     SetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
     MODULEINFO module_info = get_module_info("Taskmgr.exe");
+    g_base_address = (QWORD)module_info.lpBaseOfDll;
 
-    g_base_address    = (QWORD)module_info.lpBaseOfDll;
-    g_RefreshRate_ptr = *address_offset<QWORD>(g_base_address + 0x11C830, 0x110);
+    if((QWORD)address_offset<QWORD>(g_base_address + 0x11C830, 0x110) >> 9) { //True
+        g_RefreshRate_ptr = *address_offset<QWORD>(g_base_address + 0x11C830, 0x110);
+    }
+    else {
+        std::cout << u8"不正確的偏移😾\n請點擊 檢視->更新速度->高" << std::endl;
+    }
 
     o_UpdateData      = (UpdateData_t)    (find_pattern(&module_info, g_patten.UpdateData) + g_patten.UpdateData_offset);
     o_IsServer        = (IsServer_t)      (find_pattern(&module_info, g_patten.IsServer) + g_patten.IsServer_offset);
-    SetRefreshRate    = (SetRefreshRate_t)(find_pattern(&module_info, g_patten.SetRefreshRate) + g_patten.SetRefreshRate_offset);
+    o_SetRefreshRate  = (SetRefreshRate_t)(find_pattern(&module_info, g_patten.SetRefreshRate) + g_patten.SetRefreshRate_offset);
     GetBlockColors    = (GetBlockColors_t)(find_pattern(&module_info, g_patten.GetBlockColors) + g_patten.GetBlockColors_offset);
     SetBlockData      = (SetBlockData_t)  (find_pattern(&module_info, g_patten.SetBlockData) + g_patten.SetBlockData_offset);
 
-    o_UpdateChartData = (UpdateQuery_t)(g_base_address + 0x7D9AC);
+    printf("%p %p %p %p %p\n", o_UpdateData, o_IsServer, o_SetRefreshRate, GetBlockColors, SetBlockData);
+
+    DetourRestoreAfterWith();
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach((PVOID*)&o_SetRefreshRate, SetRefreshRate);
+    DetourTransactionCommit();
+
+    /*o_UpdateChartData = (UpdateQuery_t)(g_base_address + 0x7D9AC);
     HMODULE cv_lib    = LoadLibraryW(L"CHARTV.dll");
-    CvSetData         = (CvSetData_t)GetProcAddress(cv_lib, "CvSetData");
+    CvSetData         = (CvSetData_t)GetProcAddress(cv_lib, "CvSetData");*/
 
     DetourRestoreAfterWith();
     DetourTransactionBegin();
@@ -85,11 +104,19 @@ DWORD WINAPI attach(LPVOID) {
     DetourAttach((PVOID*)&o_IsServer, IsServer);
     DetourAttach((PVOID*)&o_UpdateChartData, UpdateChartData);
     DetourTransactionCommit();
-    
-    SetRefreshRate(g_RefreshRate_ptr, REFRESH_RATE);
+
+    std::cout << u8"請等待回應" << std::endl;
     while (!g_core) {
         Sleep(500);
     }
+
+    std::cout << u8"好" << std::endl;
+    while(!g_RefreshRate_ptr){
+        Sleep(500);
+    }
+
+    std::cout << u8"OK" << std::endl;
+    SetRefreshRate(g_RefreshRate_ptr, REFRESH_RATE);
 
     UINT16* cpu_count = (UINT16*)((BYTE*)g_core + 0x944);
     Sleep(500);
@@ -119,8 +146,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     case DLL_THREAD_DETACH:
         break;
     case DLL_PROCESS_DETACH: {
-        SetRefreshRate(g_RefreshRate_ptr, 500);
-        //MessageBoxW(NULL, L"結束掛勾", 0, 0);
         break;
     }
     }

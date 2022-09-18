@@ -8,7 +8,7 @@ using namespace std;
 
 //#define Release
 #define DEBUG_NEW_FN
-//#define CMPUTER2
+#define CMPUTER2
 
 constexpr int FRAME_SIZE = 38 * 39;
 constexpr int MAX_SIZE = 100 * 100;
@@ -30,7 +30,7 @@ int main() {
     string video_path = "E:\\360p.mp4";
     SetConsoleOutputCP(CP_UTF8);
 #ifdef CMPUTER2
-    Path = "C:\\Users\\creep\\source\\repos\\程式設計\\x64\\Release\\dll_test.dll";
+    Path = "D:\\source\\taskmgr_detour\\x64\\Release\\dll_test.dll";
     video_path = "D:\\7.mp4";
 #endif
 #ifdef Release
