@@ -7,7 +7,7 @@
 using namespace std;
 
 //#define Release
-#define DEBUG_NEW_FN
+//#define IMG
 //#define CMPUTER2
 
 constexpr int FRAME_SIZE = 38 * 39;
@@ -69,8 +69,10 @@ int main() {
         VirtualFreeEx(hProcess, loc, MAX_PATH, MEM_RELEASE);
         CloseHandle(hThread);
     }
-#ifdef DEBUG_NEW_FN
-    cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\0取.PNG");
+#ifdef IMG
+    //cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\0取.PNG");
+    cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\IMG_2369.JPG");
+
     cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
     cv::resize(img, img, { 39, 38 });
     memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);

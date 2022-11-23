@@ -11,6 +11,7 @@ bool __fastcall IsServer(void* self) {
     g_core = self;
     return o_IsServer(self);
 }
+
 //HeatMap
 SetBlockData_t   SetBlockData;
 GetBlockColors_t GetBlockColors;
@@ -44,6 +45,7 @@ __int64 __fastcall UpdateChartData(void* a1, HWND a2) {
     VARIANTARG varg;
 
     DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
+
     if (*(QWORD*)v6 != g_base_address + 0xCECC8) { //WdcCpuMonitor
         return o_UpdateChartData(a1, a2);
     }
@@ -83,9 +85,10 @@ DWORD WINAPI attach(LPVOID) {
     DetourUpdateThread(GetCurrentThread());
     DetourAttach((PVOID*)&o_UpdateData, UpdateData);
     DetourAttach((PVOID*)&o_IsServer, IsServer);
-    DetourAttach((PVOID*)&o_UpdateChartData, UpdateChartData);
+    //DetourAttach((PVOID*)&o_UpdateChartData, UpdateChartData);
+
     DetourTransactionCommit();
-    
+
     SetRefreshRate(g_RefreshRate_ptr, REFRESH_RATE);
     while (!g_core) {
         Sleep(500);
@@ -96,6 +99,7 @@ DWORD WINAPI attach(LPVOID) {
 
     std::cout << u8"注入成功，可以使用了, core=" << *cpu_count << std::endl;
     *cpu_count = o_data_pack->frame_size;
+
     return true;
 }
 
