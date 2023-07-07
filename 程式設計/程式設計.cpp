@@ -60,12 +60,42 @@ int main() {
         CloseHandle(hThread);
     }
 
+#if 0
     cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\E_ySsr8VgAcFSsX.jpg");
 
     cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
     cv::resize(img, img, { 39, 38 });
     memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
     lpvMem->frame_done = TRUE;
+#endif
+
+    cv::VideoCapture cap("E:\\7.mp4");
+    cv::Mat img, tmp;
+
+    cv::Size dsize = screenshot(g_HWND).size(); //screenshot(hwnd)
+    double fps = cap.get(cv::CAP_PROP_FPS);
+    cv::VideoWriter video("001.mp4", cv::VideoWriter::fourcc('X', '2', '6', '4'), fps, dsize, true);
+    int useless_var = 0;
+    while (1) {
+        if (lpvMem->frame_done) {
+            cap >> img;
+            if (img.empty())
+                break;
+            cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
+            cv::resize(img, img, { 39, 38 });
+
+            memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
+            lpvMem->frame_done = FALSE;
+
+            cv::cvtColor(screenshot(g_HWND), tmp, cv::COLOR_BGRA2BGR);
+            cv::resize(tmp, tmp, dsize);
+
+            video.write(tmp);
+        }
+        useless_var = 1; //卡住編譯器優化
+    }
+    video.release();
+    printf("%d\n", useless_var);
 }
 
 HANDLE GetProcessByName(wstring name, DWORD* pid) {
