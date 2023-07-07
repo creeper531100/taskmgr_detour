@@ -26,3 +26,94 @@ typedef __int64 (__fastcall* GetCpuUsageData_t)(void*, unsigned int, int*, int*)
 
 
 */
+
+
+/*__int64 __fastcall UpdateChartData(void* a1, HWND a2) {
+    std::mt19937 rng(time(0));
+    std::uniform_real_distribution<float> unif(0.0, 100.0);
+    QWORD CVArray = *((QWORD*)a1 + 55);
+    VARIANTARG varg;
+
+    double* v2 = (double*)*((QWORD*)a1 + 42);
+    double* v4 = (double*)*((QWORD*)a1 + 43);
+    int v5 = 0;
+    DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
+    bool v7 = 0;
+    unsigned int v8 = *((DWORD*)a1 + 101);
+    unsigned __int16* v40;
+    __int64 v9;
+    int v10;
+    int v17;
+    int v19; // edi
+    double v16; // xmm6_8
+    unsigned __int64 v20;
+    DOUBLE v21;
+    unsigned __int64 v22; // rcx
+    __int64 v39;
+    char v42[480];
+
+    LODWORD(v40) = v8;
+
+    printf("\n\n");
+    if (v2) {
+        v9 = *((unsigned int*)a1 + 82);
+        LODWORD(v39) = v6[2049];
+
+        if ((int)v9 >= 332932) {
+            v10 = (*(__int64(__fastcall**)(DWORD*, __int64, double*, char*, __int64))(*(QWORD*)v6 + 88))(
+                v6,
+                v9,
+                v2,
+                v42,
+                60);
+
+            LLPRINT(v6);
+            PRINT("%lld", v9);
+            //PRINT("%llf", *v2);
+            LLPRINT(v42);
+            PRINT("%d", v10);
+            PRINT("%lld", LODWORD(v39));
+
+            v17 = 60
+                * (((int)((unsigned __int64)(2290649225i64 * (int)v39) >> 32) >> 5)
+                    + ((unsigned int)((unsigned __int64)(2290649225i64 * (int)v39) >> 32) >> 31)
+                    + 1)
+                - v39;
+
+            std::mt19937 rng(time(0));
+            std::uniform_real_distribution<float> unif(0.0, 100.0);
+            QWORD CVArray = *((QWORD*)a1 + 55);
+            VARIANTARG pvarg;
+
+            for (int i = 0; i < 60; ++i) {
+                v19 = 60
+                    * (((unsigned int)(((unsigned __int64)(2004318071i64 * v17) >> 32) - v17) >> 31)
+                        + ((int)(((unsigned __int64)(2004318071i64 * v17) >> 32) - v17) >> 5))
+                    + v17;
+                VariantInit(&pvarg);
+                v20 = *((QWORD*)a1 + 55);
+                pvarg.vt = 5;
+                v21 = v19;
+                PRINT("%llf", v19);
+
+                LODWORD(v39) = 59 - i;
+
+                pvarg.dblVal = v21;
+                CvSetData(v20, 59 - i, &pvarg);
+                if (v4) {
+                    v22 = *((QWORD*)a1 + 56);
+                    pvarg.vt = i;
+                    pvarg.dblVal = unif(rng);
+                    CvSetData(v22, v39, &pvarg);
+                }
+
+                v17 = v19 + 1;
+            }
+
+            SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
+        }
+    }
+
+    printf("\n\n");
+    return 0; //o_UpdateChartData(a1, a2)
+}*/

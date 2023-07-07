@@ -58,3 +58,20 @@ UINT64 find_pattern(MODULEINFO* hmodule, std::string pattern) {
     }
     return 0;
 }
+
+void itows(int number, wchar_t* text, int size) {
+    memset(text, L'\0', size * sizeof(wchar_t));
+    int index = 0;
+    wchar_t tmp[5] = { '\0' };
+
+    do {
+        tmp[index++] = L'0' + (number % 10);
+        number /= 10;
+    } while (number && index >= 0);
+
+    for (int i = 0; i < index; i++) {
+        text[i] = tmp[index - i - 1];
+    }
+
+    text[index] = L'%';
+}

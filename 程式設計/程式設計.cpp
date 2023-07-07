@@ -27,17 +27,7 @@ struct DataPack {
 
 int main() {
     string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dll_test.dll";
-    string video_path = "E:\\360p.mp4";
     SetConsoleOutputCP(CP_UTF8);
-#ifdef CMPUTER2
-    Path = "C:\\Users\\creep\\source\\repos\\程式設計\\x64\\Release\\dll_test.dll";
-    video_path = "D:\\7.mp4";
-#endif
-#ifdef Release
-    Path = (std::filesystem::current_path().string() + "\\dll_test.dll");
-    cout << u8"\"視頻\"=";
-    cin >> video_path;
-#endif
 
     printf(u8"\n請等待注入...不要點擊任何按鈕\n");
     ShellExecuteA(nullptr, "open", "taskmgr", nullptr, nullptr, SW_SHOWNORMAL);
@@ -69,41 +59,13 @@ int main() {
         VirtualFreeEx(hProcess, loc, MAX_PATH, MEM_RELEASE);
         CloseHandle(hThread);
     }
-#ifdef IMG
-    //cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\0取.PNG");
-    cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\IMG_2369.JPG");
+
+    cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\E_ySsr8VgAcFSsX.jpg");
 
     cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
     cv::resize(img, img, { 39, 38 });
     memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
     lpvMem->frame_done = TRUE;
-#else
-    cv::VideoCapture cap(video_path);
-    cv::Mat img, tmp;
-
-    cv::Size dsize = screenshot(g_HWND).size(); //screenshot(hwnd)
-    double fps = cap.get(cv::CAP_PROP_FPS);
-    cv::VideoWriter video("out.avi", cv::VideoWriter::fourcc('D', 'I', 'V', 'X'), fps, dsize, true);
-    int useless_var = 0;
-    while (1) {
-        if (lpvMem->frame_done) {
-            cap >> img;
-            if (img.empty())
-                break;
-            cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
-
-            cv::resize(img, img, {39, 38});
-            memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
-            lpvMem->frame_done = FALSE;
-
-            cv::cvtColor(screenshot(g_HWND), tmp, cv::COLOR_BGRA2BGR);
-            cv::resize(tmp, tmp, dsize);
-            video.write(tmp);
-        }
-        useless_var = 1; //卡住編譯器優化
-    }
-    printf("%d\n", useless_var);
-#endif
 }
 
 HANDLE GetProcessByName(wstring name, DWORD* pid) {

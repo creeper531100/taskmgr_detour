@@ -4,27 +4,22 @@
 #include "Proc.h"
 
 //RefreshRate
-IsServer_t       o_IsServer;
 SetRefreshRate_t SetRefreshRate;
 
-bool __fastcall IsServer(void* self) {
-    g_core = self;
-    return o_IsServer(self);
-}
-
 //HeatMap
-SetBlockData_t   SetBlockData;
+SetBlockData_t SetBlockData;
 GetBlockColors_t GetBlockColors;
-UpdateData_t     o_UpdateData;
+UpdateData_t o_UpdateData;
 
 int64_t __fastcall UpdateData(void* self) {
     int64_t ret = o_UpdateData(self);
     UINT a4, a5;
     wchar_t text[5];
-    
+
     for (int i = 0; i < o_data_pack->frame_size; i++) {
         UINT value = 100 - (float)o_data_pack->pixel[i] / 255.0 * 100;
-        swprintf_s(text, L"%d%%", value);
+        itows(value, text, 5);
+
         GetBlockColors(self, value, &a4, &a5);
         SetBlockData(self, i, text, a4, a5);
     }
@@ -38,25 +33,38 @@ int64_t __fastcall UpdateData(void* self) {
 CvSetData_t CvSetData;
 UpdateQuery_t o_UpdateChartData;
 
+#define LODWORD(x) (*((unsigned int*)&(x)))
+
+#define LLPRINT(v) printf("%s=%p\n" , #v, v);
+#define PRINT(fmt, v) printf("%s="##fmt##"\n" , #v, v);
+
+
 __int64 __fastcall UpdateChartData(void* a1, HWND a2) {
-    std::mt19937 rng(time(0));
-    std::uniform_real_distribution<float> unif(0.0, 100.0);
-    QWORD CVArray = *((QWORD*)a1 + 55);
-    VARIANTARG varg;
-
     DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
-
     if (*(QWORD*)v6 != g_base_address + 0xCECC8) { //WdcCpuMonitor
         return o_UpdateChartData(a1, a2);
     }
 
+    unsigned __int64 v20;
+    VARIANTARG pvarg;
+
+    static int sum = 0;
     for (int i = 0; i < 60; i++) {
-        VariantInit(&varg);
-        varg.vt = VT_R8; //VT_R8 -> double
-        varg.dblVal = unif(rng); //set value
-        CvSetData(CVArray, 59 - i, &varg); //draw
+        if(i + sum >= o_data_pack->frame_size - 1) {
+            sum = 0;
+        }
+
+        v20 = *((QWORD*)a1 + 55);
+        UINT value = (float)o_data_pack->pixel[i + sum] / 255.0 * 100;
+
+        //printf("%d\n", sum);
+        VariantInit(&pvarg);
+        pvarg.vt = VT_R8; //VT_R8 -> double
+        pvarg.dblVal = value; //set value
+        CvSetData(v20, i, &pvarg);
     }
 
+    sum++;
     SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
     return 0;
 }
@@ -67,38 +75,30 @@ DWORD WINAPI attach(LPVOID) {
     SetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
     MODULEINFO module_info = get_module_info("Taskmgr.exe");
 
-    g_base_address    = (QWORD)module_info.lpBaseOfDll;
-    g_RefreshRate_ptr = *address_offset<QWORD>(g_base_address + 0x11C830, 0x110);
+    g_base_address = (QWORD)(module_info.lpBaseOfDll);
+    SetRefreshRate = (SetRefreshRate_t)(g_base_address + 0x5F978);
+    g_core = (UINT16*)(g_base_address + 0x11C374);
 
-    o_UpdateData      = (UpdateData_t)    (find_pattern(&module_info, g_patten.UpdateData) + g_patten.UpdateData_offset);
-    o_IsServer        = (IsServer_t)      (find_pattern(&module_info, g_patten.IsServer) + g_patten.IsServer_offset);
-    SetRefreshRate    = (SetRefreshRate_t)(find_pattern(&module_info, g_patten.SetRefreshRate) + g_patten.SetRefreshRate_offset);
-    GetBlockColors    = (GetBlockColors_t)(find_pattern(&module_info, g_patten.GetBlockColors) + g_patten.GetBlockColors_offset);
-    SetBlockData      = (SetBlockData_t)  (find_pattern(&module_info, g_patten.SetBlockData) + g_patten.SetBlockData_offset);
-
+    GetBlockColors = (GetBlockColors_t)(g_base_address + 0xC9158);
+    SetBlockData = (SetBlockData_t)(g_base_address + 0xC9B70);
+    o_UpdateData = (UpdateData_t)(g_base_address + 0xC9CC8);
     o_UpdateChartData = (UpdateQuery_t)(g_base_address + 0x7D9AC);
-    HMODULE cv_lib    = LoadLibraryW(L"CHARTV.dll");
-    CvSetData         = (CvSetData_t)GetProcAddress(cv_lib, "CvSetData");
+
+    HMODULE cv_lib = LoadLibraryW(L"CHARTV.dll");
+    CvSetData = (CvSetData_t)GetProcAddress(cv_lib, "CvSetData");
 
     DetourRestoreAfterWith();
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
+
     DetourAttach((PVOID*)&o_UpdateData, UpdateData);
-    DetourAttach((PVOID*)&o_IsServer, IsServer);
-    //DetourAttach((PVOID*)&o_UpdateChartData, UpdateChartData);
+    DetourAttach((PVOID*)&o_UpdateChartData, UpdateChartData);
+
 
     DetourTransactionCommit();
 
-    SetRefreshRate(g_RefreshRate_ptr, REFRESH_RATE);
-    while (!g_core) {
-        Sleep(500);
-    }
-
-    UINT16* cpu_count = (UINT16*)((BYTE*)g_core + 0x944);
-    Sleep(500);
-
-    std::cout << u8"注入成功，可以使用了, core=" << *cpu_count << std::endl;
-    *cpu_count = o_data_pack->frame_size;
+    *g_core = o_data_pack->frame_size;
+    SetRefreshRate(GetCurrentThreadId(), 1);
 
     return true;
 }
@@ -123,18 +123,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
     case DLL_THREAD_DETACH:
         break;
     case DLL_PROCESS_DETACH: {
-        SetRefreshRate(g_RefreshRate_ptr, 500);
-        //MessageBoxW(NULL, L"結束掛勾", 0, 0);
         break;
     }
     }
     return TRUE;
 }
-
-/*
-    o_UpdateData      =      (UpdateData_t)(g_base_address + 0xC9CC8);
-    o_IsServer        =        (IsServer_t)(g_base_address + 0x195BC);
-    SetRefreshRate    =  (SetRefreshRate_t)(g_base_address + 0x6063C);
-    GetBlockColors    =  (GetBlockColors_t)(g_base_address + 0xC9158);
-    SetBlockData      =    (SetBlockData_t)(g_base_address + 0xC9B70);
- */

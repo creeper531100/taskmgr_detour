@@ -6,6 +6,7 @@
 
 #ifndef PCH_H
 #define PCH_H
+#define _CRT_NON_CONFORMING_SWPRINTFS
 #define _CRT_SECURE_NO_WARNINGS
 // 請於此新增您要先行編譯的標頭
 #include "framework.h"
