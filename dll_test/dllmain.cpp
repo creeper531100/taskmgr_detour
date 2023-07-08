@@ -8,8 +8,8 @@
 #define LLPRINT(v) printf("%s=%p\n" , #v, v);
 #define PRINT(fmt, v) printf("%s="##fmt##"\n" , #v, v);
 
-#define WIDTH 39
-#define HEIGHT 38
+#define WIDTH 60
+#define HEIGHT 100
 
 //RefreshRate
 SetRefreshRate_t SetRefreshRate;
@@ -18,32 +18,64 @@ SetRefreshRate_t SetRefreshRate;
 CvSetData_t CvSetData;
 UpdateQuery_t o_UpdateChartData;
 
+#define _DWORD DWORD
+#define _QWORD QWORD
+
 __int64 __fastcall UpdateChartData(void* a1, HWND a2) {
     DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
-    /*if (*(QWORD*)v6 != g_base_address + 0xCECC8) { //WdcCpuMonitor
-        return o_UpdateChartData(a1, a2);
-    }
-    */
+    double* v4 = (double*)*((QWORD*)a1 + 43);
+    QWORD v22;
 
     unsigned __int64 v20;
     VARIANTARG pvarg;
 
-    for (int i = 0; i < 60; i++) {
-        float arg = 0.0; // 初始化每個列的累加和
-        for (int j = 0; j < HEIGHT; j++) {
-            int originalIndex = j * WIDTH + i * WIDTH / 60; // 計算原始圖片的索引
-            arg += 100 - (float)o_data_pack->pixel[originalIndex] / 255.0 * 100;
-        }
-        arg /= HEIGHT; // 計算每個列的平均值
+    float blacks[WIDTH] = { 0 };
+    float whites[WIDTH] = { 0 };
+    for(int i = 0; i < WIDTH; i++) {
+        bool is_find_white = false;
+        bool is_find_black = false;
 
+        int white = 0;
+        int black = 100;
+
+        for (int j = 0; j < 100; j++) {
+            int index = j * WIDTH + i; // 計算原始圖片的索引
+            if ((float)o_data_pack->pixel[index] >= 127.0 && is_find_white == false) {
+                white = j;
+            }
+            else {
+                is_find_white = true;
+            }
+
+            if ((float)o_data_pack->pixel[index] <= 127.0 && is_find_black == false) {
+                black = j;
+            }
+            else {
+                is_find_black = true;
+            }
+        }
+
+        whites[i] = 100 - white;
+        blacks[i] = 100 - black;
+    }
+
+    for (int i = 0; i < 60; i++) {
         v20 = *((QWORD*)a1 + 55);
         VariantInit(&pvarg);
         pvarg.vt = VT_R8; //VT_R8 -> double
-        pvarg.dblVal = arg; //set value
+        pvarg.dblVal = whites[i];
         CvSetData(v20, i, &pvarg);
+
+        if (v4) {
+            v22 = *((QWORD*)a1 + 56);
+            pvarg.vt = 5;
+            pvarg.dblVal = blacks[i]; //set value
+            CvSetData(v22, i, &pvarg);
+        }
     }
 
     SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
+    o_data_pack->frame_done = TRUE; // 代表更新
     return 0;
 }
 

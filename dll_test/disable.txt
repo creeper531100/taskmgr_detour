@@ -117,3 +117,40 @@ typedef __int64 (__fastcall* GetCpuUsageData_t)(void*, unsigned int, int*, int*)
     printf("\n\n");
     return 0; //o_UpdateChartData(a1, a2)
 }*/
+
+/*
+__int64 __fastcall UpdateChartData(void* a1, HWND a2) {
+    DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
+    double* v4 = (double*)*((QWORD*)a1 + 43);
+    QWORD v22;
+
+    unsigned __int64 v20;
+    VARIANTARG pvarg;
+
+    for (int i = 0; i < 60; i++) {
+        float arg = 0.0; // 初始化每個列的累加和
+        for (int j = 0; j < HEIGHT; j++) {
+            int originalIndex = j * WIDTH + i * WIDTH / 60; // 計算原始圖片的索引
+            arg += (float)o_data_pack->pixel[originalIndex];
+        }
+        arg /= HEIGHT; // 計算每個列的平均值
+
+        v20 = *((QWORD*)a1 + 55);
+        VariantInit(&pvarg);
+        pvarg.vt = VT_R8; //VT_R8 -> double
+        pvarg.dblVal = 100 - ((arg / 255.0) * 100); //set value
+        CvSetData(v20, i, &pvarg);
+
+        if (v4) {
+            v22 = *((QWORD*)a1 + 56);
+            pvarg.vt = 5;
+            pvarg.dblVal = ((arg / 255.0) * 100);
+            CvSetData(v22, i, &pvarg);
+        }
+    }
+
+    SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
+    o_data_pack->frame_done = TRUE; // 代表更新
+    return 0;
+}
+*/
