@@ -6,11 +6,10 @@
 #include <opencv2/opencv.hpp>
 using namespace std;
 
-//#define Release
-//#define IMG
-//#define CMPUTER2
+#define WIDTH 39
+#define HEIGHT 38
 
-constexpr int FRAME_SIZE = 38 * 39;
+constexpr int FRAME_SIZE = WIDTH * HEIGHT;
 constexpr int MAX_SIZE = 100 * 100;
 HWND g_HWND;
 
@@ -60,15 +59,14 @@ int main() {
         CloseHandle(hThread);
     }
 
-#if 0
+#if 1
     cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\E_ySsr8VgAcFSsX.jpg");
 
     cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
-    cv::resize(img, img, { 39, 38 });
+    cv::resize(img, img, { WIDTH, HEIGHT });
     memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
     lpvMem->frame_done = TRUE;
-#endif
-
+#elif 0
     cv::VideoCapture cap("E:\\7.mp4");
     cv::Mat img, tmp;
 
@@ -82,7 +80,7 @@ int main() {
             if (img.empty())
                 break;
             cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
-            cv::resize(img, img, { 39, 38 });
+            cv::resize(img, img, { WIDTH, HEIGHT });
 
             memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
             lpvMem->frame_done = FALSE;
@@ -96,6 +94,7 @@ int main() {
     }
     video.release();
     printf("%d\n", useless_var);
+#endif
 }
 
 HANDLE GetProcessByName(wstring name, DWORD* pid) {

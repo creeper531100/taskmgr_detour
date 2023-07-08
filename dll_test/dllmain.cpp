@@ -3,8 +3,49 @@
 #include "function.h"
 #include "Proc.h"
 
+#define LODWORD(x) (*((unsigned int*)&(x)))
+
+#define LLPRINT(v) printf("%s=%p\n" , #v, v);
+#define PRINT(fmt, v) printf("%s="##fmt##"\n" , #v, v);
+
+#define WIDTH 39
+#define HEIGHT 38
+
 //RefreshRate
 SetRefreshRate_t SetRefreshRate;
+
+//Chart
+CvSetData_t CvSetData;
+UpdateQuery_t o_UpdateChartData;
+
+__int64 __fastcall UpdateChartData(void* a1, HWND a2) {
+    DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
+    /*if (*(QWORD*)v6 != g_base_address + 0xCECC8) { //WdcCpuMonitor
+        return o_UpdateChartData(a1, a2);
+    }
+    */
+
+    unsigned __int64 v20;
+    VARIANTARG pvarg;
+
+    for (int i = 0; i < 60; i++) {
+        float arg = 0.0; // 初始化每個列的累加和
+        for (int j = 0; j < HEIGHT; j++) {
+            int originalIndex = j * WIDTH + i * WIDTH / 60; // 計算原始圖片的索引
+            arg += 100 - (float)o_data_pack->pixel[originalIndex] / 255.0 * 100;
+        }
+        arg /= HEIGHT; // 計算每個列的平均值
+
+        v20 = *((QWORD*)a1 + 55);
+        VariantInit(&pvarg);
+        pvarg.vt = VT_R8; //VT_R8 -> double
+        pvarg.dblVal = arg; //set value
+        CvSetData(v20, i, &pvarg);
+    }
+
+    SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
+    return 0;
+}
 
 //HeatMap
 SetBlockData_t SetBlockData;
@@ -29,55 +70,6 @@ int64_t __fastcall UpdateData(void* self) {
     return ret;
 }
 
-//Chart
-CvSetData_t CvSetData;
-UpdateQuery_t o_UpdateChartData;
-
-#define LODWORD(x) (*((unsigned int*)&(x)))
-
-#define LLPRINT(v) printf("%s=%p\n" , #v, v);
-#define PRINT(fmt, v) printf("%s="##fmt##"\n" , #v, v);
-
-#define WIDTH 39
-#define HEIGHT 38
-
-__int64 __fastcall UpdateChartData(void* a1, HWND a2) {
-    DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
-    if (*(QWORD*)v6 != g_base_address + 0xCECC8) { //WdcCpuMonitor
-        return o_UpdateChartData(a1, a2);
-    }
-
-    unsigned __int64 v20;
-    VARIANTARG pvarg;
-
-    for (int i = 0; i < 60; i++) {
-        float arg = 0.0; // 初始化每個列的累加和
-        for (int j = 0; j < HEIGHT; j++) {
-            int originalIndex = j * WIDTH + i * WIDTH / 60; // 計算原始圖片的索引
-            arg += 100 - (float)o_data_pack->pixel[originalIndex] / 255.0 * 100;
-        }
-        arg /= HEIGHT; // 計算每個列的平均值
-
-        v20 = *((QWORD*)a1 + 55);
-        VariantInit(&pvarg);
-        pvarg.vt = VT_R8; //VT_R8 -> double
-        pvarg.dblVal = arg; //set value
-        CvSetData(v20, i, &pvarg);
-    }
-
-    SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
-    return 0;
-}
-
-
-bool OK = false;
-using IsServer_t = bool (*__fastcall)(void*);
-IsServer_t       o_IsServer;
-bool __fastcall IsServer(void* ret) {
-    OK = true;
-    return o_IsServer(ret);
-}
-
 DWORD WINAPI attach(LPVOID) {
     g_oWndProc = (WndProc_t)GetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC);
     SetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
@@ -91,7 +83,6 @@ DWORD WINAPI attach(LPVOID) {
     SetBlockData = (SetBlockData_t)(g_base_address + 0xC9B70);
     o_UpdateData = (UpdateData_t)(g_base_address + 0xC9CC8);
     o_UpdateChartData = (UpdateQuery_t)(g_base_address + 0x7D9AC);
-    o_IsServer = (IsServer_t)(g_base_address + 0x195BC);
 
     HMODULE cv_lib = LoadLibraryW(L"CHARTV.dll");
     CvSetData = (CvSetData_t)GetProcAddress(cv_lib, "CvSetData");
@@ -102,7 +93,6 @@ DWORD WINAPI attach(LPVOID) {
 
     DetourAttach((PVOID*)&o_UpdateData, UpdateData);
     DetourAttach((PVOID*)&o_UpdateChartData, UpdateChartData);
-    DetourAttach((PVOID*)&o_IsServer, IsServer);
 
     DetourTransactionCommit();
 
