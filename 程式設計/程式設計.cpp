@@ -10,19 +10,33 @@ using namespace std;
 #define HEIGHT 100
 
 constexpr int FRAME_SIZE = WIDTH * HEIGHT;
-constexpr int MAX_SIZE = 100 * 100;
+constexpr int MAX_SIZE = 100 * 100 * 3;
+
 HWND g_HWND;
 
 cv::Mat screenshot(HWND);
 HANDLE GetProcessByName(wstring, DWORD*);
 static BOOL CALLBACK enumWindowCallback(HWND, LPARAM);
 
+
 struct DataPack {
     UINT8 pixel[MAX_SIZE];
+
     UINT16 frame_size;
+    UINT16 width;
+    UINT16 height;
+
     HWND hwnd;
     BOOL frame_done;
-} * lpvMem;
+
+    enum Mode {
+        BLOCK,
+        CHART
+    };
+    Mode mode;
+
+    UINT16 refresh_rate;
+} *lpvMem;
 
 int main() {
     string Path = "C:\\Users\\creep\\source\\repos\\taskmgr_detour\\x64\\Release\\dll_test.dll";
@@ -37,7 +51,11 @@ int main() {
 
     lpvMem = (DataPack*)MapViewOfFile(hMapObject, FILE_MAP_ALL_ACCESS, 0, 0, 0);
     lpvMem->frame_done = FALSE;
-    lpvMem->frame_size = FRAME_SIZE;
+    lpvMem->frame_size = FRAME_SIZE; //BGR
+    lpvMem->width = WIDTH;
+    lpvMem->height = HEIGHT;
+    lpvMem->mode = DataPack::CHART;
+    lpvMem->refresh_rate = 1;
 
     Sleep(2000);
     DWORD pid;
@@ -59,14 +77,14 @@ int main() {
         CloseHandle(hThread);
     }
 
-#if 0
-    cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\E_ySsr8VgAcFSsX.jpg");
+#if 1
+    cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\Susremaster.webp");
 
-    cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
+    //cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
     cv::resize(img, img, { WIDTH, HEIGHT });
-    memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
+    memcpy(lpvMem->pixel, img.data, lpvMem->frame_size * 3);
     lpvMem->frame_done = TRUE;
-#elif 1
+#elif 0
     cv::VideoCapture cap("E:\\7.mp4");
     cv::Mat img, tmp;
 
@@ -79,12 +97,12 @@ int main() {
             cap >> img;
             if (img.empty())
                 break;
-            cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
+
+            //cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
             cv::resize(img, img, { WIDTH, HEIGHT });
+            memcpy(lpvMem->pixel, img.data, lpvMem->frame_size * 3);
 
-            memcpy(lpvMem->pixel, img.data, lpvMem->frame_size);
             lpvMem->frame_done = FALSE;
-
             cv::cvtColor(screenshot(g_HWND), tmp, cv::COLOR_BGRA2BGR);
             cv::resize(tmp, tmp, dsize);
 

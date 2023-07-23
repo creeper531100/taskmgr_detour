@@ -3,14 +3,6 @@
 #include "function.h"
 #include "Proc.h"
 
-#define LODWORD(x) (*((unsigned int*)&(x)))
-
-#define LLPRINT(v) printf("%s=%p\n" , #v, v);
-#define PRINT(fmt, v) printf("%s="##fmt##"\n" , #v, v);
-
-#define WIDTH 60
-#define HEIGHT 100
-
 //RefreshRate
 SetRefreshRate_t SetRefreshRate;
 
@@ -18,36 +10,36 @@ SetRefreshRate_t SetRefreshRate;
 CvSetData_t CvSetData;
 UpdateQuery_t o_UpdateChartData;
 
-#define _DWORD DWORD
-#define _QWORD QWORD
-
 __int64 __fastcall UpdateChartData(void* a1, HWND a2) {
-    DWORD* v6 = (DWORD*)*((QWORD*)a1 + 40);
-    double* v4 = (double*)*((QWORD*)a1 + 43);
-    QWORD v22;
+    if (g_data_pack->mode != DataPack::CHART) {
+        return  o_UpdateChartData(a1, a2);
+    }
 
-    unsigned __int64 v20;
-    VARIANTARG pvarg;
+    float blacks[MAX_LEN] = { 0 };
+    float whites[MAX_LEN] = { 0 };
 
-    float blacks[WIDTH] = { 0 };
-    float whites[WIDTH] = { 0 };
-    for(int i = 0; i < WIDTH; i++) {
+    for(int i = 0; i < g_data_pack->width; i++) {
         bool is_find_white = false;
         bool is_find_black = false;
 
         int white = 0;
         int black = 100;
 
-        for (int j = 0; j < 100; j++) {
-            int index = j * WIDTH + i; // 計算原始圖片的索引
-            if ((float)o_data_pack->pixel[index] >= 127.0 && is_find_white == false) {
+        for (int j = 0; j < g_data_pack->height; j++) {
+            int index = (j * g_data_pack->width + i) * 3; // 計算原始圖片的索引 
+            uint8_t b = g_data_pack->pixel[index];
+            uint8_t g = g_data_pack->pixel[index + 1];
+            uint8_t r = g_data_pack->pixel[index + 2];
+            uint8_t gray = bgr2gray(b, g, r);
+
+            if (gray >= 127 && is_find_white == false) {
                 white = j;
             }
             else {
                 is_find_white = true;
             }
 
-            if ((float)o_data_pack->pixel[index] <= 127.0 && is_find_black == false) {
+            if (gray <= 127 && is_find_black == false) {
                 black = j;
             }
             else {
@@ -59,23 +51,27 @@ __int64 __fastcall UpdateChartData(void* a1, HWND a2) {
         blacks[i] = 100 - black;
     }
 
+    VARIANTARG pvarg;
+    double* v4 = (double*)*((QWORD*)a1 + 43);
+
     for (int i = 0; i < 60; i++) {
-        v20 = *((QWORD*)a1 + 55);
+        unsigned __int64 v20 = *((QWORD*)a1 + 55);
         VariantInit(&pvarg);
         pvarg.vt = VT_R8; //VT_R8 -> double
         pvarg.dblVal = whites[i];
         CvSetData(v20, i, &pvarg);
 
         if (v4) {
-            v22 = *((QWORD*)a1 + 56);
-            pvarg.vt = 5;
+            QWORD v22 = *((QWORD*)a1 + 56);
+            pvarg.vt = VT_R8;
             pvarg.dblVal = blacks[i]; //set value
             CvSetData(v22, i, &pvarg);
         }
     }
 
     SendMessageW(a2, 0x410u, NULL, NULL); //Redraw
-    o_data_pack->frame_done = TRUE; // 代表更新
+    g_data_pack->frame_done = TRUE; // 代表更新
+
     return 0;
 }
 
@@ -85,39 +81,54 @@ GetBlockColors_t GetBlockColors;
 UpdateData_t o_UpdateData;
 
 int64_t __fastcall UpdateData(void* self) {
-    int64_t ret = o_UpdateData(self);
-    UINT a4, a5;
-    wchar_t text[5];
-
-    for (int i = 0; i < o_data_pack->frame_size; i++) {
-        UINT value = 100 - (float)o_data_pack->pixel[i] / 255.0 * 100;
-        itows(value, text, 5);
-
-        GetBlockColors(self, value, &a4, &a5);
-        SetBlockData(self, i, text, a4, a5);
+    if (g_data_pack->mode != DataPack::BLOCK) {
+        return o_UpdateData(self);
     }
 
-    o_data_pack->frame_done = TRUE; // 代表更新
+    int64_t ret = o_UpdateData(self);
+    UINT block_color, a5;
+    wchar_t text[5];
+
+    int pixel_index = 0;
+    for (int i = 0; i < g_data_pack->frame_size; i++) {
+        uint8_t b     = g_data_pack->pixel[pixel_index];
+        uint8_t g     = g_data_pack->pixel[pixel_index + 1];
+        uint8_t r     = g_data_pack->pixel[pixel_index + 2];
+        uint8_t gray  = bgr2gray(b, g, r);
+        
+        UINT value = 100 - (float)gray / 255.0 * 100;
+        itows(value, text, 5);
+
+        //方塊顏色
+        GetBlockColors(self, value, &block_color, &a5);
+
+        //block_color = abgr_to_hex(255, blue, green, red);
+        SetBlockData(self, i, text, block_color, a5);
+
+        pixel_index += 3;
+    }
+
+    g_data_pack->frame_done = TRUE; // 代表更新
 
     return ret;
 }
 
 DWORD WINAPI attach(LPVOID) {
-    g_oWndProc = (WndProc_t)GetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC);
-    SetWindowLongPtr(o_data_pack->hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
+    g_oWndProc = (WndProc_t)GetWindowLongPtr(g_data_pack->hwnd, GWLP_WNDPROC);
+    SetWindowLongPtr(g_data_pack->hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
     MODULEINFO module_info = get_module_info("Taskmgr.exe");
 
-    g_base_address = (QWORD)(module_info.lpBaseOfDll);
-    SetRefreshRate = (SetRefreshRate_t)(g_base_address + 0x5F978);
-    g_core = (UINT16*)(g_base_address + 0x11C374);
+    g_base_address      = (QWORD)           (module_info.lpBaseOfDll);
+    SetRefreshRate      = (SetRefreshRate_t)(g_base_address + 0x5F978);
+    g_core              = (UINT16*)         (g_base_address + 0x11C374);
 
-    GetBlockColors = (GetBlockColors_t)(g_base_address + 0xC9158);
-    SetBlockData = (SetBlockData_t)(g_base_address + 0xC9B70);
-    o_UpdateData = (UpdateData_t)(g_base_address + 0xC9CC8);
-    o_UpdateChartData = (UpdateQuery_t)(g_base_address + 0x7D9AC);
+    GetBlockColors      = (GetBlockColors_t)(g_base_address + 0xC9158);
+    SetBlockData        = (SetBlockData_t)  (g_base_address + 0xC9B70);
+    o_UpdateData        = (UpdateData_t)    (g_base_address + 0xC9CC8);
+    o_UpdateChartData   = (UpdateQuery_t)   (g_base_address + 0x7D9AC);
 
-    HMODULE cv_lib = LoadLibraryW(L"CHARTV.dll");
-    CvSetData = (CvSetData_t)GetProcAddress(cv_lib, "CvSetData");
+    HMODULE cv_lib      = LoadLibraryW(L"CHARTV.dll");
+    CvSetData           = (CvSetData_t)GetProcAddress(cv_lib, "CvSetData");
 
     DetourRestoreAfterWith();
     DetourTransactionBegin();
@@ -128,8 +139,8 @@ DWORD WINAPI attach(LPVOID) {
 
     DetourTransactionCommit();
 
-    *g_core = o_data_pack->frame_size;
-    SetRefreshRate(GetCurrentThreadId(), 1);
+    *g_core = g_data_pack->frame_size;
+    SetRefreshRate(GetCurrentThreadId(), g_data_pack->refresh_rate);
 
     return true;
 }
@@ -144,7 +155,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
         //通訊
         HANDLE hFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, TRUE, L"Global\\dllmemfilemap123");
-        o_data_pack = (DataPack*)MapViewOfFile(hFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+        g_data_pack = (DataPack*)MapViewOfFile(hFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
         DWORD dwThreadId;
         CreateThread(NULL, 0, attach, hModule, 0, &dwThreadId);

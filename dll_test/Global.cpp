@@ -6,4 +6,4 @@ QWORD     g_base_address    = 0;
 INT64     g_RefreshRate_ptr = 0;
 UINT16*   g_core            = nullptr;
 
-DataPack* o_data_pack       = nullptr;
+DataPack* g_data_pack       = nullptr;
