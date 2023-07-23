@@ -86,7 +86,7 @@ int64_t __fastcall UpdateData(void* self) {
     }
 
     int64_t ret = o_UpdateData(self);
-    UINT block_color, a5;
+    UINT a4, a5;
     wchar_t text[5];
 
     int pixel_index = 0;
@@ -100,10 +100,10 @@ int64_t __fastcall UpdateData(void* self) {
         itows(value, text, 5);
 
         //方塊顏色
-        GetBlockColors(self, value, &block_color, &a5);
+        GetBlockColors(self, value, &a4, &a5);
 
-        //block_color = abgr_to_hex(255, blue, green, red);
-        SetBlockData(self, i, text, block_color, a5);
+        a4 = abgr_to_hex(255, b, g, r);
+        SetBlockData(self, i, text, a4, a5);
 
         pixel_index += 3;
     }

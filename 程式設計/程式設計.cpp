@@ -6,8 +6,8 @@
 #include <opencv2/opencv.hpp>
 using namespace std;
 
-#define WIDTH 60
-#define HEIGHT 100
+#define WIDTH 39
+#define HEIGHT 38
 
 constexpr int FRAME_SIZE = WIDTH * HEIGHT;
 constexpr int MAX_SIZE = 100 * 100 * 3;
@@ -54,7 +54,7 @@ int main() {
     lpvMem->frame_size = FRAME_SIZE; //BGR
     lpvMem->width = WIDTH;
     lpvMem->height = HEIGHT;
-    lpvMem->mode = DataPack::CHART;
+    lpvMem->mode = DataPack::BLOCK;
     lpvMem->refresh_rate = 1;
 
     Sleep(2000);
@@ -77,15 +77,15 @@ int main() {
         CloseHandle(hThread);
     }
 
-#if 1
+#if 0
     cv::Mat img = cv::imread("C:\\Users\\creep\\OneDrive\\桌面\\圖片\\Susremaster.webp");
 
     //cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
     cv::resize(img, img, { WIDTH, HEIGHT });
     memcpy(lpvMem->pixel, img.data, lpvMem->frame_size * 3);
     lpvMem->frame_done = TRUE;
-#elif 0
-    cv::VideoCapture cap("E:\\7.mp4");
+#elif 1
+    cv::VideoCapture cap("E:\\8.mp4");
     cv::Mat img, tmp;
 
     cv::Size dsize = screenshot(g_HWND).size(); //screenshot(hwnd)
